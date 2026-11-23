@@ -5,6 +5,7 @@ import {
   computeAnnualizedFundingApr,
   computeBasisBps,
   computeBidAskSpreadBps,
+  computeDeltaNeutralCarry,
   computeOrderbookImbalance,
   computeSpotPerpSpreadBps,
   detectMarketRegime,
@@ -12,7 +13,8 @@ import {
   evaluatePreTradeRisk,
   simulateOrderbookSlippage,
 } from './quant';
-import type { EnrichedMarket, KlineBar, PaperTrade, PerpSymbolInfo } from '../types';
+import { parseSodexWsMessage } from './ws';
+import type { EnrichedMarket, KlineBar, OrderbookData, PaperTrade, PerpSymbolInfo } from '../types';
 
 const sampleContract: PerpSymbolInfo = {
   id: 1,
@@ -231,5 +233,153 @@ describe('BasisFlow Quant Engine', () => {
     expect(curves).toHaveLength(2);
     expect(curves[1].gatedEquity).toBe(9900);
     expect(curves[1].ungatedEquity).toBeLessThan(9900);
+  });
+
+  it('computes 2-leg Delta-Neutral Cash-and-Carry net APR and breakeven hours from live Spot + Perp L2 books', () => {
+    const market = enrichMarkets(
+      [sampleContract],
+      [{
+        symbol: 'BTC-USD', lastPx: '63200', openPx: '62000', highPx: '63500', lowPx: '61900',
+        volume: '100', quoteVolume: '6300000', vwap: '63000', change: '1200', changePct: 1.9,
+        askPx: '63201', askSz: '2', bidPx: '63199', bidSz: '2', fundingRate: '0.00005', nextFundingTime: 0,
+      }],
+      [{ symbol: 'BTC-USD', openInterest: '50', markPrice: '63200', indexPrice: '63050', fundingRate: '0.00005', nextFundingTime: 0 }],
+      [{ symbol: 'BTC-USD', bidPx: '63199', bidSz: '2', askPx: '63201', askSz: '2' }],
+      [{ id: 10, name: 'vBTC_vUSDC', displayName: 'BTC/USDC', baseCoin: 'vBTC', quoteCoin: 'vUSDC', pricePrecision: 2 }],
+      [{ symbol: 'vBTC_vUSDC', lastPx: '63050', bidPx: '63049', askPx: '63051', quoteVolume: '900000', changePct: 1.8 }],
+    )[0];
+
+    const spotOb: OrderbookData = {
+      blockTime: 1, blockHeight: 100, updateID: 1,
+      bids: [['63049', '5']],
+      asks: [['63051', '5']],
+    };
+    const perpOb: OrderbookData = {
+      blockTime: 1, blockHeight: 100, updateID: 1,
+      bids: [['63199', '5']],
+      asks: [['63201', '5']],
+    };
+
+    const res = computeDeltaNeutralCarry({
+      market,
+      notionalUsd: 25_000,
+      holdingDays: 30,
+      strategy: 'CASH_AND_CARRY',
+      executionMode: 'TAKER',
+      captureBasisConvergence: true,
+      spotOrderbook: spotOb,
+      perpOrderbook: perpOb,
+    });
+
+    expect(res.spotBookLive).toBe(true);
+    expect(res.perpBookLive).toBe(true);
+    expect(res.grossFundingAprPct).toBeCloseTo(43.8, 1);
+    expect(res.netAprPct).toBeGreaterThan(30);
+    expect(res.verdict).toBe('POSITIVE_EDGE');
+    expect(res.atomicPlan.legs[0].symbol).toBe('vBTC_vUSDC');
+    expect(res.atomicPlan.legs[1].symbol).toBe('BTC-USD');
+  });
+
+  it('flags NEGATIVE_AFTER_COSTS when thin L2 slippage and fees overwhelm short-horizon carry', () => {
+    const market = enrichMarkets(
+      [sampleContract],
+      [{
+        symbol: 'BTC-USD', lastPx: '63000', openPx: '63000', highPx: '63100', lowPx: '62900',
+        volume: '10', quoteVolume: '630000', vwap: '63000', change: '0', changePct: 0,
+        askPx: '63010', askSz: '1', bidPx: '62990', bidSz: '1', fundingRate: '0.000002', nextFundingTime: 0,
+      }],
+      [{ symbol: 'BTC-USD', openInterest: '10', markPrice: '63000', indexPrice: '63000', fundingRate: '0.000002', nextFundingTime: 0 }],
+      [{ symbol: 'BTC-USD', bidPx: '62990', bidSz: '1', askPx: '63010', askSz: '1' }],
+      [],
+      [],
+    )[0];
+
+    const thinOb: OrderbookData = {
+      blockTime: 1, blockHeight: 100, updateID: 1,
+      bids: [['62900', '0.1'], ['62500', '2']],
+      asks: [['63100', '0.1'], ['63500', '2']],
+    };
+
+    const res = computeDeltaNeutralCarry({
+      market,
+      notionalUsd: 50_000,
+      holdingDays: 7,
+      strategy: 'CASH_AND_CARRY',
+      executionMode: 'TAKER',
+      captureBasisConvergence: false,
+      spotOrderbook: thinOb,
+      perpOrderbook: thinOb,
+    });
+
+    expect(res.netPnlUsd).toBeLessThan(0);
+    expect(res.verdict).toBe('NEGATIVE_AFTER_COSTS');
+  });
+
+  it('handles REVERSE_CARRY (short spot / long perp) when funding is deeply negative', () => {
+    const market = enrichMarkets(
+      [sampleContract],
+      [{
+        symbol: 'BTC-USD', lastPx: '63000', openPx: '63000', highPx: '63100', lowPx: '62900',
+        volume: '50', quoteVolume: '3150000', vwap: '63000', change: '0', changePct: 0,
+        askPx: '63001', askSz: '5', bidPx: '62999', bidSz: '5', fundingRate: '-0.00006', nextFundingTime: 0,
+      }],
+      [{ symbol: 'BTC-USD', openInterest: '50', markPrice: '63000', indexPrice: '63020', fundingRate: '-0.00006', nextFundingTime: 0 }],
+      [{ symbol: 'BTC-USD', bidPx: '62999', bidSz: '5', askPx: '63001', askSz: '5' }],
+      [],
+      [],
+    )[0];
+
+    const res = computeDeltaNeutralCarry({
+      market,
+      notionalUsd: 10_000,
+      holdingDays: 30,
+      strategy: 'REVERSE_CARRY',
+      executionMode: 'MAKER',
+      captureBasisConvergence: true,
+      spotOrderbook: null,
+      perpOrderbook: null,
+    });
+
+    expect(res.spotLegSide).toBe('SELL');
+    expect(res.perpLegSide).toBe('LONG');
+    expect(res.grossFundingAprPct).toBeCloseTo(52.56, 1);
+    expect(res.netAprPct).toBeGreaterThan(40);
+    expect(res.verdict).toBe('POSITIVE_EDGE');
+  });
+
+  it('parses live SoDEX WebSocket l2Book, trade, and markPrice payloads cleanly', () => {
+    const l2 = parseSodexWsMessage(
+      JSON.stringify({
+        channel: 'l2Book',
+        type: 'snapshot',
+        data: { E: 1795448165114, s: 'BTC-USD', u: 3573943375, a: [['63092', '0.8']], b: [['63091', '1.7']] },
+      }),
+    );
+    expect(l2.kind).toBe('l2Book');
+    expect(l2.l2Book?.bids[0][0]).toBe('63091');
+    expect(l2.l2Book?.asks[0][0]).toBe('63092');
+
+    const tr = parseSodexWsMessage(
+      JSON.stringify({
+        channel: 'trade',
+        type: 'update',
+        data: [{ E: 1795448165983, T: 1795448165945, t: 17908606, s: 'BTC-USD', S: 'SELL', p: '63072', q: '0.089' }],
+      }),
+    );
+    expect(tr.kind).toBe('trade');
+    expect(tr.trades?.[0].S).toBe('SELL');
+    expect(tr.trades?.[0].p).toBe(63072);
+
+    const mp = parseSodexWsMessage(
+      JSON.stringify({
+        channel: 'markPrice',
+        type: 'update',
+        data: [{ E: 1795448166245, s: 'BTC-USD', oi: '722.95', p: '63060', i: '63092', r: '0.000006', T: 1795449600000 }],
+      }),
+    );
+    expect(mp.kind).toBe('markPrice');
+    expect(mp.markPrice?.markPrice).toBe(63060);
+
+    expect(parseSodexWsMessage('not-json').kind).toBe('ignore');
   });
 });

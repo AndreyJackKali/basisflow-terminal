@@ -16,16 +16,18 @@ import { safeNum } from './quant';
 
 export const NETWORK_CONFIG: Record<
   NetworkMode,
-  { sodexBase: string; valueChainRpc: string; label: string; tradeBaseUrl: string }
+  { sodexBase: string; wsPerpsUrl: string; valueChainRpc: string; label: string; tradeBaseUrl: string }
 > = {
   mainnet: {
     sodexBase: 'https://mainnet-gw.sodex.dev',
+    wsPerpsUrl: 'wss://mainnet-gw.sodex.dev/ws/perps',
     valueChainRpc: 'https://mainnet.valuechain.xyz',
     label: 'SoDEX Mainnet (ValueChain L1)',
     tradeBaseUrl: 'https://sodex.com/trade',
   },
   testnet: {
     sodexBase: 'https://testnet-gw.sodex.dev',
+    wsPerpsUrl: 'wss://testnet-gw.sodex.dev/ws/perps',
     valueChainRpc: 'https://testnet.valuechain.xyz',
     label: 'SoDEX Testnet (ValueChain Testnet)',
     tradeBaseUrl: 'https://testnet.sodex.com/trade',
@@ -231,6 +233,24 @@ export async function fetchSymbolMicrostructure(
     klines,
     trades,
   };
+}
+
+export async function fetchSpotOrderbook(
+  network: NetworkMode,
+  spotSymbol: string,
+  onLog?: (log: ApiProbeLog) => void,
+): Promise<OrderbookData | null> {
+  if (!spotSymbol) return null;
+  const base = NETWORK_CONFIG[network].sodexBase;
+  const enc = encodeURIComponent(spotSymbol);
+  const res = await trackedFetchJson<{ data: OrderbookData }>(
+    'SoDEX Spot',
+    `${base}/api/v1/spot/markets/${enc}/orderbook?limit=20`,
+    undefined,
+    onLog,
+    `${spotSymbol} Spot L2 orderbook (for 2-leg hedge slippage)`,
+  );
+  return res.data?.data ?? null;
 }
 
 export async function fetchValueChainTelemetry(

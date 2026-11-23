@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { RefreshCw, Gauge, ArrowRight } from 'lucide-react';
-import type { EnrichedMarket, KlineBar, OrderbookData, TradeTick } from '../types';
+import { RefreshCw, Gauge, ArrowRight, Radio, Pause, Play } from 'lucide-react';
+import type { EnrichedMarket, KlineBar, OrderbookData, TradeTick, WsStreamTelemetry } from '../types';
 import {
   computeOrderbookImbalance,
   detectMarketRegime,
@@ -19,6 +19,9 @@ interface Props {
   klines: KlineBar[];
   trades: TradeTick[];
   loading: boolean;
+  wsTelemetry: WsStreamTelemetry;
+  wsPaused: boolean;
+  onToggleWsPause: () => void;
   onRefresh: () => void;
   onSendToExecution: (symbol: string) => void;
 }
@@ -33,6 +36,9 @@ export const MicrostructureTab: React.FC<Props> = ({
   klines,
   trades,
   loading,
+  wsTelemetry,
+  wsPaused,
+  onToggleWsPause,
   onRefresh,
   onSendToExecution,
 }) => {
@@ -105,12 +111,43 @@ export const MicrostructureTab: React.FC<Props> = ({
 
           {orderbook && (
             <span className="text-[11px] font-mono text-slate-400">
-              SoDEX L2 Block <b className="text-cyan-400">#{orderbook.blockHeight.toLocaleString()}</b>
+              {orderbook.blockHeight > 0 ? (
+                <>
+                  SoDEX L2 Block <b className="text-cyan-400">#{orderbook.blockHeight.toLocaleString()}</b>
+                </>
+              ) : (
+                <>
+                  WS Update <b className="text-cyan-400">#{orderbook.updateID.toLocaleString()}</b>
+                </>
+              )}
             </span>
           )}
+
+          <span
+            className={`inline-flex items-center gap-1.5 text-[11px] font-mono px-2 py-0.5 rounded border ${
+              wsTelemetry.status === 'STREAMING'
+                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
+                : wsTelemetry.status === 'PAUSED'
+                  ? 'bg-slate-800 text-slate-400 border-slate-700'
+                  : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/40'
+            }`}
+          >
+            <Radio className={`w-3 h-3 ${wsTelemetry.status === 'STREAMING' ? 'animate-pulse' : ''}`} />
+            {wsTelemetry.status === 'STREAMING'
+              ? `500ms WS LIVE (${wsTelemetry.msgCount} ticks)`
+              : `WS: ${wsTelemetry.status}`}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={onToggleWsPause}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 transition"
+            title="Pause or resume real-time 500ms SoDEX WebSocket L2 stream"
+          >
+            {wsPaused ? <Play className="w-3.5 h-3.5 text-emerald-400" /> : <Pause className="w-3.5 h-3.5 text-amber-400" />}
+            {wsPaused ? 'Resume WS' : 'Pause WS'}
+          </button>
           <button
             onClick={onRefresh}
             disabled={loading}

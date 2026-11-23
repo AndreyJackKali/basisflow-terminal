@@ -17,6 +17,7 @@ import {
 } from '../lib/quant';
 import { NETWORK_CONFIG } from '../lib/api';
 import { CounterfactualChart } from './Charts';
+import { DeltaNeutralHedgeCard } from './DeltaNeutralHedgeCard';
 
 interface Props {
   network: NetworkMode;
@@ -24,6 +25,7 @@ interface Props {
   selectedMarket: EnrichedMarket | null;
   onChangeSymbol: (symbol: string) => void;
   orderbook: OrderbookData | null;
+  spotOrderbook: OrderbookData | null;
   killSwitch: boolean;
   onToggleKillSwitch: () => void;
   paperTrades: PaperTrade[];
@@ -38,6 +40,7 @@ export const ExecutionTab: React.FC<Props> = ({
   selectedMarket,
   onChangeSymbol,
   orderbook,
+  spotOrderbook,
   killSwitch,
   onToggleKillSwitch,
   paperTrades,
@@ -423,6 +426,13 @@ export const ExecutionTab: React.FC<Props> = ({
           </pre>
         </div>
       </div>
+
+      {/* Multi-Leg Spot↔Perp Delta-Neutral Hedge & Net Carry Builder */}
+      <DeltaNeutralHedgeCard
+        market={selectedMarket}
+        perpOrderbook={orderbook}
+        spotOrderbook={spotOrderbook}
+      />
 
       {/* Paper Portfolio Ledger + Counterfactual Equity Curve */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">

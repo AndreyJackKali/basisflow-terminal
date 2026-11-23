@@ -24,13 +24,17 @@ import type {
   SpotTicker,
   TradeTick,
   ValueChainTelemetry,
+  WsStreamTelemetry,
 } from './types';
 import {
+  NETWORK_CONFIG,
   fetchAllSodexMarkets,
+  fetchSpotOrderbook,
   fetchSymbolMicrostructure,
   fetchValueChainTelemetry,
   probeSoSoValueOpenApi,
 } from './lib/api';
+import { createSodexPerpStream } from './lib/ws';
 import { enrichMarkets } from './lib/quant';
 import { ScannerTab } from './components/ScannerTab';
 import { MicrostructureTab } from './components/MicrostructureTab';
@@ -77,13 +81,22 @@ export default function App() {
   const [vcTelemetry, setVcTelemetry] = useState<ValueChainTelemetry | null>(null);
   const [loadingMarkets, setLoadingMarkets] = useState(false);
 
-  // Microstructure state
+  // Microstructure & Live WebSocket state
   const [selectedSymbol, setSelectedSymbol] = useState<string>('BTC-USD');
   const [interval, setIntervalState] = useState<'15m' | '1h' | '4h' | '1d'>('1h');
   const [orderbook, setOrderbook] = useState<OrderbookData | null>(null);
+  const [spotOrderbook, setSpotOrderbook] = useState<OrderbookData | null>(null);
   const [klines, setKlines] = useState<KlineBar[]>([]);
   const [trades, setTrades] = useState<TradeTick[]>([]);
   const [loadingMicro, setLoadingMicro] = useState(false);
+  const [wsPaused, setWsPaused] = useState(false);
+  const [wsTelemetry, setWsTelemetry] = useState<WsStreamTelemetry>({
+    status: 'CONNECTING',
+    endpoint: NETWORK_CONFIG.mainnet.wsPerpsUrl,
+    symbol: 'BTC-USD',
+    msgCount: 0,
+    lastTickAt: null,
+  });
 
   // SoSoValue BYOK state
   const [sosoKey, setSosoKey] = useState<string>(() => {
@@ -214,6 +227,89 @@ export default function App() {
     [markets, selectedSymbol],
   );
 
+  // Fetch paired Spot L2 Orderbook when a Spot↔Perp asset is selected (powers 2-leg Delta-Neutral Hedge Builder)
+  useEffect(() => {
+    let active = true;
+    const spotSym = selectedMarket?.spotSymbol;
+    if (!spotSym) {
+      setSpotOrderbook(null);
+      return;
+    }
+    fetchSpotOrderbook(network, spotSym, pushLog).then((ob) => {
+      if (active) setSpotOrderbook(ob);
+    });
+    return () => {
+      active = false;
+    };
+  }, [network, selectedMarket?.spotSymbol, pushLog]);
+
+  // Real-time 500ms SoDEX WebSocket L2 Orderbook, Trade Tape & MarkPrice Stream
+  useEffect(() => {
+    if (!selectedSymbol) return;
+    const endpoint = NETWORK_CONFIG[network].wsPerpsUrl;
+    if (wsPaused) {
+      setWsTelemetry((prev) => ({ ...prev, status: 'PAUSED', endpoint, symbol: selectedSymbol }));
+      return;
+    }
+
+    setWsTelemetry({
+      status: 'CONNECTING',
+      endpoint,
+      symbol: selectedSymbol,
+      msgCount: 0,
+      lastTickAt: null,
+    });
+
+    const cleanup = createSodexPerpStream({
+      network,
+      symbol: selectedSymbol,
+      onL2Book: (update) => {
+        setOrderbook((prev) => ({
+          blockHeight: prev?.blockHeight ?? 0,
+          blockTime: update.blockTime,
+          updateID: update.updateID,
+          bids: update.bids,
+          asks: update.asks,
+        }));
+      },
+      onTrades: (incoming) => {
+        setTrades((prev) => {
+          const seen = new Set(prev.map((t) => `${t.t}-${t.T}`));
+          const fresh = incoming.filter((t) => !seen.has(`${t.t}-${t.T}`));
+          return fresh.length > 0 ? [...fresh, ...prev].slice(0, 60) : prev;
+        });
+      },
+      onMarkPrice: (mp) => {
+        setRawData((prev) => ({
+          ...prev,
+          perpMarks: prev.perpMarks.map((item) =>
+            item.symbol === mp.symbol
+              ? {
+                  ...item,
+                  markPrice: String(mp.markPrice),
+                  indexPrice: String(mp.indexPrice),
+                  openInterest: String(mp.openInterest),
+                  fundingRate: String(mp.fundingRate),
+                  nextFundingTime: mp.nextFundingTime || item.nextFundingTime,
+                }
+              : item,
+          ),
+        }));
+      },
+      onStatus: (status, tickAt) => {
+        setWsTelemetry((prev) => ({
+          status,
+          endpoint,
+          symbol: selectedSymbol,
+          msgCount: tickAt ? prev.msgCount + 1 : prev.msgCount,
+          lastTickAt: tickAt ?? prev.lastTickAt,
+        }));
+      },
+    });
+
+    return cleanup;
+  }, [network, selectedSymbol, wsPaused]);
+
   const badgeClass = (st: DataBadgeState) =>
     st === 'LIVE'
       ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
@@ -265,6 +361,24 @@ export default function App() {
               ))}
             </div>
 
+            <button
+              onClick={() => setActiveTab('microstructure')}
+              className={`px-2 py-1 rounded border flex items-center gap-1 ${
+                wsTelemetry.status === 'STREAMING'
+                  ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
+                  : wsTelemetry.status === 'PAUSED'
+                    ? 'bg-slate-800 text-slate-400 border-slate-700'
+                    : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/40'
+              }`}
+              title={`Real-time 500ms WebSocket stream: ${wsTelemetry.endpoint} (${wsTelemetry.symbol})`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full bg-current ${
+                  wsTelemetry.status === 'STREAMING' ? 'animate-pulse' : ''
+                }`}
+              />
+              WS: {wsTelemetry.status === 'STREAMING' ? `${wsTelemetry.msgCount} ticks` : wsTelemetry.status}
+            </button>
             <button
               onClick={() => setConsoleOpen(true)}
               className={`px-2 py-1 rounded border flex items-center gap-1 ${badgeClass(perpsStatus)}`}
@@ -366,6 +480,9 @@ export default function App() {
             klines={klines}
             trades={trades}
             loading={loadingMicro}
+            wsTelemetry={wsTelemetry}
+            wsPaused={wsPaused}
+            onToggleWsPause={() => setWsPaused((v) => !v)}
             onRefresh={() => loadMicro(selectedSymbol, interval)}
             onSendToExecution={(sym) => {
               setSelectedSymbol(sym);
@@ -381,6 +498,7 @@ export default function App() {
             selectedMarket={selectedMarket}
             onChangeSymbol={setSelectedSymbol}
             orderbook={orderbook}
+            spotOrderbook={spotOrderbook}
             killSwitch={killSwitch}
             onToggleKillSwitch={() => setKillSwitch((v) => !v)}
             paperTrades={paperTrades}

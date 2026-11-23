@@ -1,6 +1,8 @@
 import type {
   AssetClass,
   ConvictionBreakdown,
+  DeltaNeutralHedgeInput,
+  DeltaNeutralHedgeResult,
   EnrichedMarket,
   KlineBar,
   PaperTrade,
@@ -630,4 +632,175 @@ export function buildCounterfactualCurves(
     });
   }
   return points;
+}
+
+/**
+ * Multi-Leg Spot↔Perp Delta-Neutral Hedge & Net Carry Calculator.
+ * Sweeps both live SoDEX Spot L2 and SoDEX Perp L2 orderbooks to compute true net carry APR
+ * and breakeven holding hours after 2-leg entry/exit slippage + maker/taker fees.
+ */
+export function computeDeltaNeutralCarry(input: DeltaNeutralHedgeInput): DeltaNeutralHedgeResult {
+  const {
+    market,
+    notionalUsd,
+    holdingDays,
+    strategy,
+    executionMode,
+    captureBasisConvergence,
+    spotOrderbook,
+    perpOrderbook,
+  } = input;
+
+  const safeNotional = Math.max(10, notionalUsd);
+  const safeDays = Math.max(1, holdingDays);
+
+  const spotLegSide: 'BUY' | 'SELL' = strategy === 'CASH_AND_CARRY' ? 'BUY' : 'SELL';
+  const perpLegSide: 'SHORT' | 'LONG' = strategy === 'CASH_AND_CARRY' ? 'SHORT' : 'LONG';
+
+  const spotMid =
+    spotOrderbook && spotOrderbook.bids.length > 0 && spotOrderbook.asks.length > 0
+      ? (safeNum(spotOrderbook.bids[0][0]) + safeNum(spotOrderbook.asks[0][0])) / 2
+      : (market.spotPrice ?? market.indexPrice ?? market.markPrice);
+
+  const perpMid =
+    perpOrderbook && perpOrderbook.bids.length > 0 && perpOrderbook.asks.length > 0
+      ? (safeNum(perpOrderbook.bids[0][0]) + safeNum(perpOrderbook.asks[0][0])) / 2
+      : market.markPrice;
+
+  const spotBookLive = Boolean(
+    spotOrderbook && spotOrderbook.bids.length > 0 && spotOrderbook.asks.length > 0,
+  );
+  const perpBookLive = Boolean(
+    perpOrderbook && perpOrderbook.bids.length > 0 && perpOrderbook.asks.length > 0,
+  );
+
+  // Entry slippage from live L2 books (or 0 bps if passive MAKER limit order)
+  const spotSim =
+    spotBookLive && spotOrderbook
+      ? simulateOrderbookSlippage(
+          spotLegSide === 'BUY' ? spotOrderbook.asks : spotOrderbook.bids,
+          spotLegSide,
+          safeNotional,
+          spotMid,
+        )
+      : null;
+
+  const perpSim =
+    perpBookLive && perpOrderbook
+      ? simulateOrderbookSlippage(
+          perpLegSide === 'LONG' ? perpOrderbook.asks : perpOrderbook.bids,
+          perpLegSide === 'LONG' ? 'BUY' : 'SELL',
+          safeNotional,
+          perpMid,
+        )
+      : null;
+
+  const spotSlippageBps =
+    executionMode === 'MAKER' ? 0 : (spotSim?.slippageBps ?? Math.max(3, market.spreadBps * 0.5));
+  const perpSlippageBps =
+    executionMode === 'MAKER' ? 0 : (perpSim?.slippageBps ?? Math.max(2, market.spreadBps * 0.5));
+
+  // Round-trip slippage accounts for both opening & unwinding both legs
+  const roundTripSlippageBps = Number(((spotSlippageBps + perpSlippageBps) * 2).toFixed(2));
+
+  // Fees: SoDEX perp contract maker/taker + standard spot 0.02%/0.05% (round-trip = 2x per leg)
+  const perpFeeRate =
+    executionMode === 'MAKER'
+      ? safeNum(market.contract.makerFee, 0.00012)
+      : safeNum(market.contract.takerFee, 0.0004);
+  const spotFeeRate = executionMode === 'MAKER' ? 0.0002 : 0.0005;
+  const roundTripFeeBps = Number((((perpFeeRate + spotFeeRate) * 2) * 10_000).toFixed(2));
+
+  const totalExecutionCostBps = Number((roundTripSlippageBps + roundTripFeeBps).toFixed(2));
+  const totalExecutionCostUsd = Number(((safeNotional * totalExecutionCostBps) / 10_000).toFixed(2));
+
+  // Funding accrual sign: CASH_AND_CARRY (short perp) collects positive funding; REVERSE_CARRY (long perp) collects negative funding
+  const signedFundingApr =
+    strategy === 'CASH_AND_CARRY' ? market.annualizedFundingApr : -market.annualizedFundingApr;
+  const expectedFundingUsd = Number(
+    ((safeNotional * (signedFundingApr / 100) * safeDays) / 365).toFixed(2),
+  );
+
+  // Basis convergence edge (bps): CASH_AND_CARRY benefits when perp > spot (+spread); REVERSE_CARRY benefits when perp < spot (-spread)
+  const rawBasisBps = market.spotPerpSpreadBps ?? market.markIndexBasisBps;
+  const basisEdgeBps = Number(
+    (captureBasisConvergence
+      ? strategy === 'CASH_AND_CARRY'
+        ? rawBasisBps
+        : -rawBasisBps
+      : 0
+    ).toFixed(2),
+  );
+  const expectedBasisUsd = Number(((safeNotional * basisEdgeBps) / 10_000).toFixed(2));
+
+  const netPnlUsd = Number((expectedFundingUsd + expectedBasisUsd - totalExecutionCostUsd).toFixed(2));
+  const netAprPct = Number((((netPnlUsd / safeNotional) * (365 / safeDays)) * 100).toFixed(2));
+
+  // Breakeven hours to recover execution costs (minus immediate basis edge) via hourly funding carry
+  const hourlyFundingUsd = (safeNotional * (signedFundingApr / 100)) / (365 * 24);
+  const residualCostToRecover = totalExecutionCostUsd - expectedBasisUsd;
+  let breakevenHours: number | null = null;
+  if (residualCostToRecover <= 0) {
+    breakevenHours = 0;
+  } else if (hourlyFundingUsd > 0) {
+    breakevenHours = Number((residualCostToRecover / hourlyFundingUsd).toFixed(1));
+  }
+
+  let verdict: DeltaNeutralHedgeResult['verdict'] = 'NEGATIVE_AFTER_COSTS';
+  if (netPnlUsd > 0 && netAprPct >= 8) {
+    verdict = 'POSITIVE_EDGE';
+  } else if (netPnlUsd > 0) {
+    verdict = 'THIN_EDGE';
+  }
+
+  return {
+    strategy,
+    spotLegSide,
+    perpLegSide,
+    notionalUsd: safeNotional,
+    holdingDays: safeDays,
+    spotSlippageBps: Number(spotSlippageBps.toFixed(2)),
+    perpSlippageBps: Number(perpSlippageBps.toFixed(2)),
+    roundTripSlippageBps,
+    roundTripFeeBps,
+    totalExecutionCostBps,
+    totalExecutionCostUsd,
+    grossFundingAprPct: Number(signedFundingApr.toFixed(2)),
+    expectedFundingUsd,
+    basisEdgeBps,
+    expectedBasisUsd,
+    netPnlUsd,
+    netAprPct,
+    breakevenHours,
+    verdict,
+    spotBookLive,
+    perpBookLive,
+    atomicPlan: {
+      protocol: 'SoDEX Spot + Perps (ValueChain L1)',
+      strategy,
+      notionalUsd: safeNotional,
+      holdingDays: safeDays,
+      legs: [
+        {
+          venue: 'SoDEX Spot',
+          symbol: market.spotSymbol ?? `${market.baseCoin}_vUSDC`,
+          side: spotLegSide,
+          orderType: executionMode === 'MAKER' ? 'POST_ONLY_LIMIT' : 'LIMIT_IOC',
+          estVwap: Number((spotSim?.vwapPrice ?? spotMid).toFixed(4)),
+          slippageBps: Number(spotSlippageBps.toFixed(2)),
+        },
+        {
+          venue: 'SoDEX Perps',
+          symbol: market.symbol,
+          side: perpLegSide === 'LONG' ? 'BUY' : 'SELL',
+          orderType: executionMode === 'MAKER' ? 'POST_ONLY_LIMIT' : 'LIMIT_IOC',
+          estVwap: Number((perpSim?.vwapPrice ?? perpMid).toFixed(4)),
+          slippageBps: Number(perpSlippageBps.toFixed(2)),
+        },
+      ],
+      projectedNetPnlUsd: netPnlUsd,
+      projectedNetAprPct: netAprPct,
+      breakevenHours,
+    },
+  };
 }

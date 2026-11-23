@@ -14,6 +14,7 @@ const PROBES = [
   { name: 'SoDEX Mainnet BTC-USD Trades', url: 'https://mainnet-gw.sodex.dev/api/v1/perps/markets/BTC-USD/trades?limit=20' },
   { name: 'SoDEX Mainnet Spot Symbols', url: 'https://mainnet-gw.sodex.dev/api/v1/spot/markets/symbols' },
   { name: 'SoDEX Mainnet Spot Tickers', url: 'https://mainnet-gw.sodex.dev/api/v1/spot/markets/tickers' },
+  { name: 'SoDEX Mainnet Spot vBTC_vUSDC L2 Orderbook', url: 'https://mainnet-gw.sodex.dev/api/v1/spot/markets/vBTC_vUSDC/orderbook?limit=20' },
   { name: 'SoDEX Testnet Perps Mark Prices', url: 'https://testnet-gw.sodex.dev/api/v1/perps/markets/mark-prices' },
   {
     name: 'ValueChain Mainnet RPC (eth_blockNumber)',
@@ -64,5 +65,40 @@ for (const probe of PROBES) {
   }
 }
 
-console.log(`\nSummary: ${passed}/${PROBES.length} live endpoints verified.`);
-if (passed !== PROBES.length) process.exit(1);
+// Live WebSocket 500ms l2Book verification
+const wsPassed = await new Promise((resolve) => {
+  const t0 = Date.now();
+  let done = false;
+  const finish = (ok, detail) => {
+    if (done) return;
+    done = true;
+    const ms = Date.now() - t0;
+    console.log(`${ok ? 'PASS' : 'FAIL'} | WS  101 | ${String(ms).padStart(4)}ms | SoDEX Mainnet Perps WebSocket l2Book (${detail})`);
+    resolve(ok);
+  };
+  try {
+    const ws = new WebSocket('wss://mainnet-gw.sodex.dev/ws/perps');
+    const timer = setTimeout(() => { try { ws.close(); } catch {} finish(false, 'timeout'); }, 5000);
+    ws.addEventListener('open', () => {
+      ws.send(JSON.stringify({ op: 'subscribe', params: { channel: 'l2Book', symbol: 'BTC-USD' } }));
+    });
+    ws.addEventListener('message', (ev) => {
+      try {
+        const j = JSON.parse(String(ev.data));
+        if (j.channel === 'l2Book' && j.data?.b?.length > 0 && j.data?.a?.length > 0) {
+          clearTimeout(timer);
+          ws.close();
+          finish(true, `updateID=${j.data.u}, bids=${j.data.b.length}, asks=${j.data.a.length}`);
+        }
+      } catch {}
+    });
+    ws.addEventListener('error', () => { clearTimeout(timer); finish(false, 'ws error'); });
+  } catch (err) {
+    finish(false, err.message);
+  }
+});
+
+const totalProbes = PROBES.length + 1;
+const totalPassed = passed + (wsPassed ? 1 : 0);
+console.log(`\nSummary: ${totalPassed}/${totalProbes} live REST/RPC/WebSocket endpoints verified.`);
+if (totalPassed !== totalProbes) process.exit(1);

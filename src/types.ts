@@ -303,3 +303,63 @@ export interface SoSoValueState {
   treasuries: Record<string, unknown>[];
   etfFlowZScore: number;
 }
+
+export type WsConnectionStatus = 'STREAMING' | 'CONNECTING' | 'PAUSED' | 'FALLBACK';
+
+export interface WsStreamTelemetry {
+  status: WsConnectionStatus;
+  endpoint: string;
+  symbol: string;
+  msgCount: number;
+  lastTickAt: number | null;
+}
+
+export type HedgeStrategyMode = 'CASH_AND_CARRY' | 'REVERSE_CARRY';
+
+export interface DeltaNeutralHedgeInput {
+  market: EnrichedMarket;
+  notionalUsd: number;
+  holdingDays: number;
+  strategy: HedgeStrategyMode;
+  executionMode: 'TAKER' | 'MAKER';
+  captureBasisConvergence: boolean;
+  spotOrderbook: OrderbookData | null;
+  perpOrderbook: OrderbookData | null;
+}
+
+export interface DeltaNeutralHedgeResult {
+  strategy: HedgeStrategyMode;
+  spotLegSide: 'BUY' | 'SELL';
+  perpLegSide: 'SHORT' | 'LONG';
+  notionalUsd: number;
+  holdingDays: number;
+  spotSlippageBps: number;
+  perpSlippageBps: number;
+  roundTripSlippageBps: number;
+  roundTripFeeBps: number;
+  totalExecutionCostBps: number;
+  totalExecutionCostUsd: number;
+  grossFundingAprPct: number;
+  expectedFundingUsd: number;
+  basisEdgeBps: number;
+  expectedBasisUsd: number;
+  netPnlUsd: number;
+  netAprPct: number;
+  breakevenHours: number | null;
+  verdict: 'POSITIVE_EDGE' | 'THIN_EDGE' | 'NEGATIVE_AFTER_COSTS';
+  spotBookLive: boolean;
+  perpBookLive: boolean;
+  atomicPlan: {
+    protocol: 'SoDEX Spot + Perps (ValueChain L1)';
+    strategy: HedgeStrategyMode;
+    notionalUsd: number;
+    holdingDays: number;
+    legs: [
+      { venue: 'SoDEX Spot'; symbol: string; side: 'BUY' | 'SELL'; orderType: string; estVwap: number; slippageBps: number },
+      { venue: 'SoDEX Perps'; symbol: string; side: 'BUY' | 'SELL'; orderType: string; estVwap: number; slippageBps: number },
+    ];
+    projectedNetPnlUsd: number;
+    projectedNetAprPct: number;
+    breakevenHours: number | null;
+  };
+}
