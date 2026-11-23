@@ -499,6 +499,7 @@ export default function App() {
             onChangeSymbol={setSelectedSymbol}
             orderbook={orderbook}
             spotOrderbook={spotOrderbook}
+            klines={klines}
             killSwitch={killSwitch}
             onToggleKillSwitch={() => setKillSwitch((v) => !v)}
             paperTrades={paperTrades}

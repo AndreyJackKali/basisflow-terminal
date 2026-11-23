@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowUpDown, Search, TrendingUp, Layers, ShieldCheck, Activity } from 'lucide-react';
+import { ArrowUpDown, Download, Search, TrendingUp, Layers, ShieldCheck, Activity } from 'lucide-react';
 import type { EnrichedMarket } from '../types';
+import { serializeMarketsToCsv } from '../lib/quant';
 
 interface Props {
   markets: EnrichedMarket[];
@@ -178,15 +179,34 @@ export const ScannerTab: React.FC<Props> = ({
           ))}
         </div>
 
-        <div className="relative">
-          <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Filter ticker (BTC, NVDA, XAUT)..."
-            className="bg-[#090d14] border border-slate-700/80 rounded pl-8 pr-3 py-1 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 w-56"
-          />
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Filter ticker (BTC, NVDA, XAUT)..."
+              className="bg-[#090d14] border border-slate-700/80 rounded pl-8 pr-3 py-1 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 w-52"
+            />
+          </div>
+          <button
+            onClick={() => {
+              const csv = serializeMarketsToCsv(filtered);
+              const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `basisflow-sodex-scanner-${Date.now()}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium text-slate-200 transition"
+            title="Export live filtered markets to CSV"
+          >
+            <Download className="w-3.5 h-3.5 text-emerald-400" />
+            CSV
+          </button>
         </div>
       </div>
 

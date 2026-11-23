@@ -363,3 +363,57 @@ export interface DeltaNeutralHedgeResult {
     breakevenHours: number | null;
   };
 }
+
+export interface MonteCarloInput {
+  market: EnrichedMarket;
+  klines: KlineBar[];
+  side: 'LONG' | 'SHORT';
+  accountEquityUsd: number;
+  positionNotionalUsd: number;
+  positionQty: number;
+  entryPrice: number;
+  stopLossPrice: number;
+  takeProfitPrice: number;
+  liquidationPrice: number;
+  entrySlippageBps: number;
+  horizonHours: 24 | 72 | 168;
+  numPaths?: number;
+}
+
+export interface MonteCarloStepBand {
+  hour: number;
+  p10: number;
+  p25: number;
+  p50: number;
+  p75: number;
+  p90: number;
+}
+
+export interface TailStressScenario {
+  id: string;
+  label: string;
+  shockSummary: string;
+  projectedPnlUsd: number;
+  equityImpactPct: number;
+  outcome: 'SURVIVES' | 'STOPPED' | 'LIQUIDATED' | 'TP_HIT';
+}
+
+export interface MonteCarloStressResult {
+  symbol: string;
+  sampleReturnsCount: number;
+  numPaths: number;
+  horizonHours: number;
+  annualizedRealizedVolPct: number;
+  expectedPnlUsd: number;
+  medianPnlUsd: number;
+  var95Usd: number;
+  var95Pct: number;
+  cvar99Usd: number;
+  cvar99Pct: number;
+  tpHitRatePct: number;
+  slHitRatePct: number;
+  liquidationProbPct: number;
+  winRatePct: number;
+  bands: MonteCarloStepBand[];
+  stressScenarios: TailStressScenario[];
+}

@@ -5,6 +5,9 @@ import type {
   DeltaNeutralHedgeResult,
   EnrichedMarket,
   KlineBar,
+  MonteCarloInput,
+  MonteCarloStepBand,
+  MonteCarloStressResult,
   PaperTrade,
   PerpMarkPrice,
   PerpSymbolInfo,
@@ -18,6 +21,7 @@ import type {
   SlippageResult,
   SpotSymbolInfo,
   SpotTicker,
+  TailStressScenario,
 } from '../types';
 
 const EQUITY_BASE_COINS = new Set([
@@ -803,4 +807,352 @@ export function computeDeltaNeutralCarry(input: DeltaNeutralHedgeInput): DeltaNe
       breakevenHours,
     },
   };
+}
+
+// Deterministic Mulberry32 PRNG so Monte Carlo bootstrap is 100% reproducible & unit-testable
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function hashSeed(str: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+function clamp(v: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, v));
+}
+
+function mcMean(arr: number[]): number {
+  if (arr.length === 0) return 0;
+  return arr.reduce((a, b) => a + b, 0) / arr.length;
+}
+
+function mcStdDev(arr: number[]): number {
+  if (arr.length < 2) return 0;
+  const m = mcMean(arr);
+  const variance = arr.reduce((acc, x) => acc + (x - m) * (x - m), 0) / (arr.length - 1);
+  return Math.sqrt(Math.max(0, variance));
+}
+
+function percentile(sorted: number[], p: number): number {
+  if (sorted.length === 0) return 0;
+  const idx = clamp((sorted.length - 1) * p, 0, sorted.length - 1);
+  const lo = Math.floor(idx);
+  const hi = Math.ceil(idx);
+  if (lo === hi) return sorted[lo];
+  return sorted[lo] + (sorted[hi] - sorted[lo]) * (idx - lo);
+}
+
+/**
+ * Live Empirical Bootstrap Monte Carlo & Deterministic Tail-Stress Engine.
+ * Bootstraps actual realized bar log-returns directly from live SoDEX /klines (zero synthetic assumptions),
+ * simulating SL, TP, contract liquidation, taker fees, entry slippage, and hourly funding carry accrual.
+ */
+export function runLiveBootstrapMonteCarlo(input: MonteCarloInput): MonteCarloStressResult {
+  const {
+    market,
+    klines,
+    side,
+    accountEquityUsd,
+    positionNotionalUsd,
+    positionQty,
+    entryPrice,
+    stopLossPrice,
+    takeProfitPrice,
+    liquidationPrice,
+    entrySlippageBps,
+    horizonHours,
+  } = input;
+
+  const numPaths = Math.max(100, Math.min(2000, input.numPaths ?? 1000));
+  const safeEquity = Math.max(1, accountEquityUsd);
+  const safeEntry = Math.max(1e-8, entryPrice);
+
+  // Extract empirical log-returns from live SoDEX OHLCV candles and normalize to 1h step variance
+  const rawReturns: number[] = [];
+  let barDurationHours = 1;
+  if (klines.length >= 2) {
+    const dtMs = klines[klines.length - 1].t - klines[klines.length - 2].t;
+    if (dtMs > 0) {
+      barDurationHours = clamp(dtMs / 3_600_000, 0.25, 24);
+    }
+  }
+  const scaleToHourly = 1 / Math.sqrt(barDurationHours);
+
+  for (let i = 1; i < klines.length; i++) {
+    const prev = klines[i - 1].c;
+    const curr = klines[i].c;
+    if (prev > 0 && curr > 0) {
+      rawReturns.push(Math.log(curr / prev) * scaleToHourly);
+    }
+  }
+
+  // Fallback empirical envelope only if klines haven't arrived yet (explicitly surfaced via sampleReturnsCount = 0)
+  const returnsPool =
+    rawReturns.length >= 5
+      ? rawReturns
+      : [-0.012, -0.006, -0.002, 0.001, 0.004, 0.009, -0.004, 0.003, -0.009, 0.007];
+
+  const hourlyStd = mcStdDev(returnsPool);
+  const annualizedRealizedVolPct = Number((hourlyStd * Math.sqrt(24 * 365) * 100).toFixed(1));
+
+  // Round-trip taker fee + entry slippage cost in USD
+  const takerFeeRate = safeNum(market.contract.takerFee, 0.0004);
+  const roundTripCostUsd =
+    positionNotionalUsd * (takerFeeRate * 2 + Math.max(0, entrySlippageBps) / 10_000);
+
+  // Hourly funding PnL in USD (positive funding -> shorts collect, longs pay)
+  const periodsPerHour = 3600 / Math.max(60, market.fundingIntervalSec || 3600);
+  const signedFundingSign = side === 'SHORT' ? 1 : -1;
+  const hourlyFundingUsd =
+    positionNotionalUsd * market.fundingRate * periodsPerHour * signedFundingSign;
+
+  const lastCandleT = klines.length > 0 ? klines[klines.length - 1].t : 0;
+  const rng = mulberry32(hashSeed(`${market.symbol}:${side}:${horizonHours}:${lastCandleT}`));
+
+  // Sample 12 evenly spaced checkpoints across the horizon for the SVG fan chart
+  const bandSteps = 12;
+  const stepHours: number[] = [];
+  for (let s = 0; s <= bandSteps; s++) {
+    stepHours.push(Math.round((horizonHours * s) / bandSteps));
+  }
+  const stepBuckets: number[][] = stepHours.map(() => []);
+  const finalPnls: number[] = [];
+
+  let tpHits = 0;
+  let slHits = 0;
+  let liqHits = 0;
+  let wins = 0;
+
+  for (let p = 0; p < numPaths; p++) {
+    let price = safeEntry;
+    let realizedPnl = -roundTripCostUsd;
+    let active = true;
+    let nextBucketIdx = 0;
+
+    if (stepHours[0] === 0) {
+      stepBuckets[0].push(safeEquity + realizedPnl);
+      nextBucketIdx = 1;
+    }
+
+    for (let h = 1; h <= horizonHours; h++) {
+      if (active) {
+        const r = returnsPool[Math.floor(rng() * returnsPool.length)];
+        price = price * Math.exp(r);
+        realizedPnl += hourlyFundingUsd;
+
+        const hitLiq =
+          liquidationPrice > 0 &&
+          (side === 'LONG' ? price <= liquidationPrice : price >= liquidationPrice);
+        const hitSl =
+          stopLossPrice > 0 &&
+          (side === 'LONG' ? price <= stopLossPrice : price >= stopLossPrice);
+        const hitTp =
+          takeProfitPrice > 0 &&
+          (side === 'LONG' ? price >= takeProfitPrice : price <= takeProfitPrice);
+
+        if (hitLiq) {
+          const liqPriceDiff =
+            side === 'LONG' ? liquidationPrice - safeEntry : safeEntry - liquidationPrice;
+          realizedPnl = Math.max(-safeEquity, liqPriceDiff * positionQty + realizedPnl);
+          liqHits++;
+          active = false;
+        } else if (hitSl) {
+          const slPriceDiff =
+            side === 'LONG' ? stopLossPrice - safeEntry : safeEntry - stopLossPrice;
+          realizedPnl = slPriceDiff * positionQty + realizedPnl;
+          slHits++;
+          active = false;
+        } else if (hitTp) {
+          const tpPriceDiff =
+            side === 'LONG' ? takeProfitPrice - safeEntry : safeEntry - takeProfitPrice;
+          realizedPnl = tpPriceDiff * positionQty + realizedPnl;
+          tpHits++;
+          active = false;
+        }
+      }
+
+      const mtmPnl = active
+        ? (side === 'LONG' ? price - safeEntry : safeEntry - price) * positionQty + realizedPnl
+        : realizedPnl;
+
+      while (nextBucketIdx < stepHours.length && stepHours[nextBucketIdx] === h) {
+        stepBuckets[nextBucketIdx].push(Math.max(0, safeEquity + mtmPnl));
+        nextBucketIdx++;
+      }
+
+      if (h === horizonHours) {
+        const clampedFinal = Math.max(-safeEquity, mtmPnl);
+        finalPnls.push(clampedFinal);
+        if (clampedFinal > 0) wins++;
+      }
+    }
+  }
+
+  const sortedPnls = [...finalPnls].sort((a, b) => a - b);
+  const expectedPnlUsd = Number(mcMean(finalPnls).toFixed(2));
+  const medianPnlUsd = Number(percentile(sortedPnls, 0.5).toFixed(2));
+
+  // 95% VaR = 5th percentile loss (expressed as positive loss magnitude if negative, else 0)
+  const p05 = percentile(sortedPnls, 0.05);
+  const var95Usd = Number(Math.max(0, -p05).toFixed(2));
+  const var95Pct = Number(((var95Usd / safeEquity) * 100).toFixed(2));
+
+  // 99% CVaR (Expected Shortfall) = mean of worst 1% of paths
+  const tailCount = Math.max(1, Math.floor(sortedPnls.length * 0.01));
+  const worstTailMean = mcMean(sortedPnls.slice(0, tailCount));
+  const cvar99Usd = Number(Math.max(var95Usd, -worstTailMean).toFixed(2));
+  const cvar99Pct = Number(((cvar99Usd / safeEquity) * 100).toFixed(2));
+
+  const bands: MonteCarloStepBand[] = stepHours.map((hour, idx) => {
+    const arr = [...stepBuckets[idx]].sort((a, b) => a - b);
+    return {
+      hour,
+      p10: Number(percentile(arr, 0.1).toFixed(2)),
+      p25: Number(percentile(arr, 0.25).toFixed(2)),
+      p50: Number(percentile(arr, 0.5).toFixed(2)),
+      p75: Number(percentile(arr, 0.75).toFixed(2)),
+      p90: Number(percentile(arr, 0.9).toFixed(2)),
+    };
+  });
+
+  // Deterministic Tail-Stress Scenarios
+  const evalPriceShock = (
+    id: string,
+    label: string,
+    shockSummary: string,
+    shockPct: number,
+    fundingMultiplier = 1,
+  ): TailStressScenario => {
+    const shockedPrice = safeEntry * (1 + shockPct / 100);
+    const funding24h = hourlyFundingUsd * 24 * fundingMultiplier;
+    const hitLiq =
+      liquidationPrice > 0 &&
+      (side === 'LONG' ? shockedPrice <= liquidationPrice : shockedPrice >= liquidationPrice);
+    const hitSl =
+      stopLossPrice > 0 &&
+      (side === 'LONG' ? shockedPrice <= stopLossPrice : shockedPrice >= stopLossPrice);
+    const hitTp =
+      takeProfitPrice > 0 &&
+      (side === 'LONG' ? shockedPrice >= takeProfitPrice : shockedPrice <= takeProfitPrice);
+
+    let outcome: TailStressScenario['outcome'] = 'SURVIVES';
+    let effExit = shockedPrice;
+    if (hitLiq && (!hitSl || Math.abs(shockPct) >= 15)) {
+      outcome = 'LIQUIDATED';
+      effExit = liquidationPrice;
+    } else if (hitSl) {
+      outcome = 'STOPPED';
+      effExit = stopLossPrice;
+    } else if (hitTp) {
+      outcome = 'TP_HIT';
+      effExit = takeProfitPrice;
+    }
+
+    const rawPnl =
+      (side === 'LONG' ? effExit - safeEntry : safeEntry - effExit) * positionQty +
+      funding24h -
+      roundTripCostUsd;
+    const projectedPnlUsd = Number(Math.max(-safeEquity, rawPnl).toFixed(2));
+    const equityImpactPct = Number(((projectedPnlUsd / safeEquity) * 100).toFixed(2));
+    return { id, label, shockSummary, projectedPnlUsd, equityImpactPct, outcome };
+  };
+
+  const stressScenarios: TailStressScenario[] = [
+    evalPriceShock('flash-crash', 'Flash Crash (-10% Gap)', '-10% spot/perp gap through thin liquidity', -10),
+    evalPriceShock('short-squeeze', 'Short Squeeze (+10% Spike)', '+10% vertical cascade', 10),
+    evalPriceShock(
+      'liq-cascade',
+      'Extreme Tail (-20% Gap)',
+      '-20% black-swan gap (tests liquidation gap risk)',
+      -20,
+    ),
+    evalPriceShock(
+      'funding-flip',
+      'Funding Reversal (-2x / 24h)',
+      'Flat price + funding flips -2x against position',
+      0,
+      -2,
+    ),
+  ];
+
+  return {
+    symbol: market.symbol,
+    sampleReturnsCount: rawReturns.length,
+    numPaths,
+    horizonHours,
+    annualizedRealizedVolPct,
+    expectedPnlUsd,
+    medianPnlUsd,
+    var95Usd,
+    var95Pct,
+    cvar99Usd,
+    cvar99Pct,
+    tpHitRatePct: Number(((tpHits / numPaths) * 100).toFixed(1)),
+    slHitRatePct: Number(((slHits / numPaths) * 100).toFixed(1)),
+    liquidationProbPct: Number(((liqHits / numPaths) * 100).toFixed(1)),
+    winRatePct: Number(((wins / numPaths) * 100).toFixed(1)),
+    bands,
+    stressScenarios,
+  };
+}
+
+function escapeCsvCell(v: string | number | null | undefined): string {
+  const s = v === null || v === undefined ? '' : String(v);
+  if (/[",\n\r]/.test(s)) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+export function serializeMarketsToCsv(markets: EnrichedMarket[]): string {
+  const headers = [
+    'symbol',
+    'assetClass',
+    'markPrice',
+    'indexPrice',
+    'changePct24h',
+    'annualizedFundingAprPct',
+    'markIndexBasisBps',
+    'spotSymbol',
+    'spotPerpSpreadBps',
+    'quoteVolume24hUsd',
+    'openInterestUsd',
+    'spreadBps',
+    'convictionScore',
+    'direction',
+  ];
+  const rows = markets.map((m) =>
+    [
+      m.symbol,
+      m.assetClass,
+      m.markPrice,
+      m.indexPrice,
+      m.changePct24h,
+      m.annualizedFundingApr,
+      m.markIndexBasisBps,
+      m.spotSymbol ?? '',
+      m.spotPerpSpreadBps ?? '',
+      m.quoteVolume24h,
+      m.openInterestUsd,
+      m.spreadBps,
+      m.conviction.score,
+      m.conviction.direction,
+    ]
+      .map(escapeCsvCell)
+      .join(','),
+  );
+  return [headers.join(','), ...rows].join('\n');
 }

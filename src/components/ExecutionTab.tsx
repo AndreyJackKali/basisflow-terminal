@@ -9,7 +9,7 @@ import {
   Power,
   Trash2,
 } from 'lucide-react';
-import type { EnrichedMarket, NetworkMode, OrderbookData, PaperTrade } from '../types';
+import type { EnrichedMarket, KlineBar, NetworkMode, OrderbookData, PaperTrade } from '../types';
 import {
   buildCounterfactualCurves,
   evaluatePreTradeRisk,
@@ -18,6 +18,7 @@ import {
 import { NETWORK_CONFIG } from '../lib/api';
 import { CounterfactualChart } from './Charts';
 import { DeltaNeutralHedgeCard } from './DeltaNeutralHedgeCard';
+import { MonteCarloStressCard } from './MonteCarloStressCard';
 
 interface Props {
   network: NetworkMode;
@@ -26,6 +27,7 @@ interface Props {
   onChangeSymbol: (symbol: string) => void;
   orderbook: OrderbookData | null;
   spotOrderbook: OrderbookData | null;
+  klines: KlineBar[];
   killSwitch: boolean;
   onToggleKillSwitch: () => void;
   paperTrades: PaperTrade[];
@@ -41,6 +43,7 @@ export const ExecutionTab: React.FC<Props> = ({
   onChangeSymbol,
   orderbook,
   spotOrderbook,
+  klines,
   killSwitch,
   onToggleKillSwitch,
   paperTrades,
@@ -432,6 +435,18 @@ export const ExecutionTab: React.FC<Props> = ({
         market={selectedMarket}
         perpOrderbook={orderbook}
         spotOrderbook={spotOrderbook}
+      />
+
+      {/* Empirical Bootstrap Monte Carlo & Tail-Stress Risk Engine */}
+      <MonteCarloStressCard
+        market={selectedMarket}
+        klines={klines}
+        side={side}
+        equity={equity}
+        stopLossPrice={stopLossPrice}
+        takeProfitPrice={takeProfitPrice}
+        liveSlippageBps={liveSlippageBps}
+        evaluation={evaluation}
       />
 
       {/* Paper Portfolio Ledger + Counterfactual Equity Curve */}

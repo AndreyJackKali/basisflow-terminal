@@ -11,6 +11,8 @@ import {
   detectMarketRegime,
   enrichMarkets,
   evaluatePreTradeRisk,
+  runLiveBootstrapMonteCarlo,
+  serializeMarketsToCsv,
   simulateOrderbookSlippage,
 } from './quant';
 import { parseSodexWsMessage } from './ws';
@@ -381,5 +383,113 @@ describe('BasisFlow Quant Engine', () => {
     expect(mp.markPrice?.markPrice).toBe(63060);
 
     expect(parseSodexWsMessage('not-json').kind).toBe('ignore');
+  });
+
+  it('produces deterministic empirical bootstrap Monte Carlo VaR/CVaR from live klines', () => {
+    const market = enrichMarkets(
+      [sampleContract],
+      [{
+        symbol: 'BTC-USD', lastPx: '63000', openPx: '62500', highPx: '63500', lowPx: '62000',
+        volume: '100', quoteVolume: '6300000', vwap: '63000', change: '500', changePct: 0.8,
+        askPx: '63002', askSz: '5', bidPx: '62998', bidSz: '5', fundingRate: '0.00003', nextFundingTime: 0,
+      }],
+      [{ symbol: 'BTC-USD', openInterest: '200', markPrice: '63000', indexPrice: '62980', fundingRate: '0.00003', nextFundingTime: 0 }],
+      [{ symbol: 'BTC-USD', bidPx: '62998', bidSz: '5', askPx: '63002', askSz: '5' }],
+      [],
+      [],
+    )[0];
+
+    const klines: KlineBar[] = Array.from({ length: 30 }, (_, i) => {
+      const px = 62000 + Math.sin(i * 0.7) * 650 + i * 25;
+      return { t: 1_700_000_000_000 + i * 3_600_000, o: px - 40, h: px + 120, l: px - 120, c: px, v: 50, q: 3_000_000, n: 200 };
+    });
+
+    const input = {
+      market,
+      klines,
+      side: 'SHORT' as const,
+      accountEquityUsd: 10_000,
+      positionNotionalUsd: 4_000,
+      positionQty: 4_000 / 63_000,
+      entryPrice: 63_000,
+      stopLossPrice: 64_575,
+      takeProfitPrice: 59_850,
+      liquidationPrice: 82_000,
+      entrySlippageBps: 2,
+      horizonHours: 72 as const,
+      numPaths: 500,
+    };
+
+    const run1 = runLiveBootstrapMonteCarlo(input);
+    const run2 = runLiveBootstrapMonteCarlo(input);
+
+    expect(run1).toEqual(run2); // 100% deterministic seeded PRNG
+    expect(run1.sampleReturnsCount).toBe(29);
+    expect(run1.cvar99Usd).toBeGreaterThanOrEqual(run1.var95Usd);
+    expect(run1.annualizedRealizedVolPct).toBeGreaterThan(0);
+    expect(run1.bands.length).toBe(13);
+    expect(run1.stressScenarios.length).toBe(4);
+    expect(run1.stressScenarios.find((s) => s.id === 'short-squeeze')?.outcome).toBe('STOPPED');
+  });
+
+  it('detects liquidation risk in Monte Carlo when leverage is tight and volatility is extreme', () => {
+    const market = enrichMarkets(
+      [sampleContract],
+      [{
+        symbol: 'BTC-USD', lastPx: '63000', openPx: '63000', highPx: '65000', lowPx: '61000',
+        volume: '100', quoteVolume: '6300000', vwap: '63000', change: '0', changePct: 0,
+        askPx: '63002', askSz: '5', bidPx: '62998', bidSz: '5', fundingRate: '0', nextFundingTime: 0,
+      }],
+      [{ symbol: 'BTC-USD', openInterest: '200', markPrice: '63000', indexPrice: '63000', fundingRate: '0', nextFundingTime: 0 }],
+      [{ symbol: 'BTC-USD', bidPx: '62998', bidSz: '5', askPx: '63002', askSz: '5' }],
+      [],
+      [],
+    )[0];
+
+    const volatileKlines: KlineBar[] = Array.from({ length: 20 }, (_, i) => {
+      const px = i % 2 === 0 ? 63_000 : 60_200;
+      return { t: 1_700_000_000_000 + i * 3_600_000, o: px, h: px * 1.02, l: px * 0.98, c: px, v: 50, q: 3_000_000, n: 100 };
+    });
+
+    const res = runLiveBootstrapMonteCarlo({
+      market,
+      klines: volatileKlines,
+      side: 'LONG',
+      accountEquityUsd: 10_000,
+      positionNotionalUsd: 200_000,
+      positionQty: 200_000 / 63_000,
+      entryPrice: 63_000,
+      stopLossPrice: 55_000, // stop below liq
+      takeProfitPrice: 75_000,
+      liquidationPrice: 61_500, // tight 20x liq
+      entrySlippageBps: 5,
+      horizonHours: 24,
+      numPaths: 300,
+    });
+
+    expect(res.liquidationProbPct).toBeGreaterThan(20);
+    expect(res.stressScenarios.find((s) => s.id === 'liq-cascade')?.outcome).toBe('LIQUIDATED');
+  });
+
+  it('serializes live scanner markets to valid RFC-4180 CSV', () => {
+    const market = enrichMarkets(
+      [sampleContract],
+      [{
+        symbol: 'BTC-USD', lastPx: '63000', openPx: '62000', highPx: '63500', lowPx: '61500',
+        volume: '100', quoteVolume: '6300000', vwap: '63000', change: '1000', changePct: 1.6,
+        askPx: '63002', askSz: '5', bidPx: '62998', bidSz: '5', fundingRate: '0.00002', nextFundingTime: 0,
+      }],
+      [{ symbol: 'BTC-USD', openInterest: '200', markPrice: '63000', indexPrice: '62990', fundingRate: '0.00002', nextFundingTime: 0 }],
+      [{ symbol: 'BTC-USD', bidPx: '62998', bidSz: '5', askPx: '63002', askSz: '5' }],
+      [{ id: 1, name: 'vBTC_vUSDC', displayName: 'BTC/USDC', baseCoin: 'vBTC', quoteCoin: 'vUSDC', pricePrecision: 2 }],
+      [{ symbol: 'vBTC_vUSDC', lastPx: '62980', bidPx: '62975', askPx: '62985', quoteVolume: '1200000', changePct: 1.5 }],
+    );
+
+    const csv = serializeMarketsToCsv(market);
+    const lines = csv.split('\n');
+    expect(lines.length).toBe(2);
+    expect(lines[0]).toContain('annualizedFundingAprPct');
+    expect(lines[1]).toContain('BTC-USD,Crypto,63000');
+    expect(lines[1]).toContain('vBTC_vUSDC');
   });
 });

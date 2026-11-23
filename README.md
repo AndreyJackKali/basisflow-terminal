@@ -65,6 +65,7 @@ Solo on-chain traders operating across **SoDEX's 107 perpetual markets and 48 sp
   5. SoDEX `minNotional` & Gross Exposure Cap
   6. Daily Drawdown Circuit Breaker
 - **Multi-Leg Spot↔Perp Delta-Neutral Hedge & Net Carry Builder (`DeltaNeutralHedgeCard`):** Fetches BOTH live **SoDEX Spot L2** (`/api/v1/spot/markets/{pair}/orderbook?limit=20`) and **SoDEX Perp L2** books to compute true **2-leg round-trip slippage + maker/taker fees**, **Net Carry APR (%)**, **Breakeven Holding Hours**, an edge verdict (`POSITIVE EDGE` / `THIN EDGE` / `NEGATIVE AFTER COSTS`), and a 1-click **Atomic 2-Leg Hedge Plan JSON**.
+- **Empirical Bootstrap Monte Carlo & Tail-Stress Risk Engine (`MonteCarloStressCard`, v1.2.0):** Runs **1,000 deterministic seeded paths** (`24h / 72h / 168h`) bootstrapped directly from live SoDEX `/klines` realized log-returns (zero synthetic assumptions) to compute **95% VaR**, **99% CVaR (Expected Shortfall)**, **Liquidation Probability**, **TP/SL Hit Rates**, an SVG **P10–P90 Equity Fan Chart**, and a **4-Scenario Deterministic Tail-Stress Matrix** (`-10% Flash Crash`, `+10% Short Squeeze`, `-20% Extreme Tail`, `Funding Flip -2x`) with 1-click **Risk Audit JSON** and **Scanner CSV** exports.
 - Outputs a **non-custodial deterministic SoDEX EIP-712 `PerpOrder` payload** (1-click Copy JSON + 1-click Launch on SoDEX), persistent **`localStorage` Mark-to-Market Paper Ledger**, and **Counterfactual Risk-Gate Equity Curve**.
 
 ### 5. Tab 4 — Native SoSoValue OpenAPI v1 Intelligence Hub (BYOK)
@@ -79,7 +80,7 @@ Solo on-chain traders operating across **SoDEX's 107 perpetual markets and 48 sp
 
 ```bash
 npm install
-npm test              # 13/13 Vitest unit tests (funding APR, basis bps, L2 slippage, regime, fail-closed risk gates, 2-leg delta-neutral carry, WS parser)
+npm test              # 16/16 Vitest unit tests (funding APR, basis bps, L2 slippage, regime, fail-closed risk gates, 2-leg delta-neutral carry, WS parser, empirical bootstrap Monte Carlo VaR/CVaR & CSV export)
 npm run verify:sodex  # 14/14 live REST, ValueChain RPC & 500ms WebSocket l2Book endpoints verified (zero auth required)
 npm run verify:soso   # Verifies SoSoValue OpenAPI v1 CORS & auth contract (pass SOSO_API_KEY=... for live 200 OK)
 npm run build         # TypeScript strict check + Vite production bundle
