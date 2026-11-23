@@ -31,9 +31,13 @@ Solo on-chain traders operating across **SoDEX's 107 perpetual markets and 48 sp
 |---|---|
 | ![Execution Desk](docs/screen_execution.png) | ![Delta-Neutral Hedge Builder](docs/screen_hedge.png) |
 
-| Tab 4: Native SoSoValue OpenAPI v1 Hub (BYOK) | Clickable Radical Data Honesty API Console |
+| Empirical Bootstrap Monte Carlo (1,000 Paths) & Tail-Stress Matrix | Tab 4: Native SoSoValue OpenAPI v1 Hub (BYOK) |
 |---|---|
-| ![SoSoValue OpenAPI Hub](docs/screen_soso.png) | ![API Console Drawer](docs/screen_console.png) |
+| ![Monte Carlo VaR/CVaR & Tail-Stress](docs/screen_montecarlo.png) | ![SoSoValue OpenAPI Hub](docs/screen_soso.png) |
+
+| Clickable Radical Data Honesty API Console | HD Product Walkthrough Video |
+|---|---|
+| ![API Console Drawer](docs/screen_console.png) | [`docs/demo.mp4`](docs/demo.mp4) (1080p MP4 — full 4-tab live walkthrough) |
 
 ---
 
