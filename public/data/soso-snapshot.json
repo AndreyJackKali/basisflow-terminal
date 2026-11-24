@@ -1,19 +1,26 @@
 {
   "schemaVersion": "1.3.0",
   "source": "SoSoValue OpenAPI v1 (Live Verified Snapshot)",
-  "fetchedAt": "2026-11-24T04:05:51.993Z",
+  "fetchedAt": "2026-11-24T10:40:50.955Z",
   "fetchedDateUtc": "2026-11-24",
   "endpointsVerified": 24,
   "marketOverview": {
-    "totalMarketCap": 2069932572839.2532,
-    "totalMarketCapChangePct": -1.03584436,
-    "totalVolume24h": 100913055480.45,
-    "ethGasGwei": 0.10287136,
-    "btcGasSatVb": 0.14,
-    "asOf": 1795493149704
+    "totalMarketCap": 2053762208403.5474,
+    "totalMarketCapChangePct": -2.02552535,
+    "totalVolume24h": 101509409114.73,
+    "ethGasGwei": 0.124394742,
+    "btcGasSatVb": 1,
+    "asOf": 1795516847162
   },
   "etfFlows": {
     "BTC": [
+      {
+        "date": "2026-11-23",
+        "totalNetInflow": -569739636.2999997,
+        "totalValueTraded": 3527036174.8,
+        "totalNetAssets": 74124798305.68867,
+        "cumNetInflow": 52273635551.108
+      },
       {
         "date": "2026-11-20",
         "totalNetInflow": -669162059.12,
@@ -156,6 +163,13 @@
       }
     ],
     "ETH": [
+      {
+        "date": "2026-11-23",
+        "totalNetInflow": -84963312.735,
+        "totalValueTraded": 472075791,
+        "totalNetAssets": 9216025249.716839,
+        "cumNetInflow": 11124443949.32085
+      },
       {
         "date": "2026-11-20",
         "totalNetInflow": -97375294.08,
@@ -581,18 +595,18 @@
       "exchange": "NYSE"
     }
   ],
-  "btcEtfFlowZScore": -1.8,
-  "ethEtfFlowZScore": -0.42,
+  "btcEtfFlowZScore": -1.31,
+  "ethEtfFlowZScore": -0.21,
   "ssiIndices": [
     {
       "ticker": "ssiDeFi",
-      "price": 6.079186620165,
-      "changePct24h": 0.0102,
-      "roi7d": -0.1538,
-      "roi1m": -0.2694,
-      "roi3m": -0.1244,
-      "roi1y": -0.0798,
-      "ytd": 0.1654,
+      "price": 6.008365401431,
+      "changePct24h": -0.0132,
+      "roi7d": -0.1636,
+      "roi1m": -0.2779,
+      "roi3m": -0.1346,
+      "roi1y": -0.0906,
+      "ytd": 0.1518,
       "constituents": [
         {
           "symbol": "pancakeswap",
@@ -638,53 +652,53 @@
     },
     {
       "ticker": "ssiAI",
-      "price": 3.476559863594,
-      "changePct24h": -0.0259,
-      "roi7d": -0.0177,
-      "roi1m": -0.2253,
-      "roi3m": -0.0152,
-      "roi1y": -0.4806,
-      "ytd": -0.2321
+      "price": 3.428645245457,
+      "changePct24h": -0.0457,
+      "roi7d": -0.0313,
+      "roi1m": -0.2359,
+      "roi3m": -0.0288,
+      "roi1y": -0.4878,
+      "ytd": -0.2427
     },
     {
       "ticker": "ssiRWA",
-      "price": 3.528310223636,
-      "changePct24h": -0.0082,
-      "roi7d": -0.2493,
-      "roi1m": -0.3921,
-      "roi3m": -0.2733,
-      "roi1y": -0.428,
-      "ytd": -0.2921
+      "price": 3.448537535978,
+      "changePct24h": -0.0287,
+      "roi7d": -0.2662,
+      "roi1m": -0.4058,
+      "roi3m": -0.2897,
+      "roi1y": -0.4409,
+      "ytd": -0.3081
     },
     {
       "ticker": "ssiCeFi",
-      "price": 17.339710413356,
-      "changePct24h": -0.0087,
-      "roi7d": -0.1834,
-      "roi1m": -0.2471,
-      "roi3m": -0.1629,
-      "roi1y": -0.4282,
-      "ytd": -0.3735
+      "price": 17.151414364676,
+      "changePct24h": -0.0178,
+      "roi7d": -0.1923,
+      "roi1m": -0.2553,
+      "roi3m": -0.172,
+      "roi1y": -0.4344,
+      "ytd": -0.3803
     },
     {
       "ticker": "ssiLayer1",
-      "price": 7.517645012298,
-      "changePct24h": -0.0113,
-      "roi7d": -0.1623,
-      "roi1m": -0.273,
-      "roi3m": -0.2215,
-      "roi1y": -0.4235,
-      "ytd": -0.3758
+      "price": 7.45683854458,
+      "changePct24h": -0.0189,
+      "roi7d": -0.1691,
+      "roi1m": -0.2789,
+      "roi3m": -0.2278,
+      "roi1y": -0.4281,
+      "ytd": -0.3808
     },
     {
       "ticker": "ssiMAG7",
-      "price": 10.67139238758,
-      "changePct24h": -0.014,
-      "roi7d": -0.1792,
-      "roi1m": -0.2686,
-      "roi3m": -0.1906,
-      "roi1y": -0.4695,
-      "ytd": -0.3937,
+      "price": 10.578239091004,
+      "changePct24h": -0.0244,
+      "roi7d": -0.1863,
+      "roi1m": -0.2749,
+      "roi3m": -0.1976,
+      "roi1y": -0.4742,
+      "ytd": -0.399,
       "constituents": [
         {
           "symbol": "solana",
@@ -718,73 +732,73 @@
     },
     {
       "ticker": "ssiSocialFi",
-      "price": 3.908344445509,
-      "changePct24h": 0.0029,
-      "roi7d": -0.1599,
-      "roi1m": -0.2811,
-      "roi3m": -0.2937,
-      "roi1y": -0.441,
-      "ytd": -0.4111
+      "price": 3.816390802851,
+      "changePct24h": -0.0281,
+      "roi7d": -0.1796,
+      "roi1m": -0.298,
+      "roi3m": -0.3103,
+      "roi1y": -0.4541,
+      "ytd": -0.4249
     },
     {
       "ticker": "ssiDePIN",
-      "price": 1.310179494404,
-      "changePct24h": 0.0047,
-      "roi7d": -0.1851,
-      "roi1m": -0.3506,
-      "roi3m": -0.1047,
-      "roi1y": -0.6649,
-      "ytd": -0.4692
+      "price": 1.302750817953,
+      "changePct24h": -0.0127,
+      "roi7d": -0.1897,
+      "roi1m": -0.3543,
+      "roi3m": -0.1098,
+      "roi1y": -0.6668,
+      "ytd": -0.4722
     },
     {
       "ticker": "ssiMeme",
-      "price": 4.892268662208,
-      "changePct24h": 0.0108,
-      "roi7d": -0.1901,
-      "roi1m": -0.2999,
-      "roi3m": -0.275,
-      "roi1y": -0.6236,
-      "ytd": -0.4916
+      "price": 4.843474660846,
+      "changePct24h": -0.0048,
+      "roi7d": -0.1981,
+      "roi1m": -0.3068,
+      "roi3m": -0.2822,
+      "roi1y": -0.6273,
+      "ytd": -0.4967
     },
     {
       "ticker": "ssiPayFi",
-      "price": 12.398759648857,
-      "changePct24h": 0.0174,
-      "roi7d": -0.105,
-      "roi1m": -0.2744,
-      "roi3m": -0.2423,
-      "roi1y": -0.5717,
-      "ytd": -0.4937
+      "price": 12.170580729173,
+      "changePct24h": -0.0098,
+      "roi7d": -0.1215,
+      "roi1m": -0.2878,
+      "roi3m": -0.2563,
+      "roi1y": -0.5795,
+      "ytd": -0.5031
     },
     {
       "ticker": "ssiLayer2",
-      "price": 0.540330008773,
-      "changePct24h": 0.001,
-      "roi7d": -0.1566,
-      "roi1m": -0.3226,
-      "roi3m": -0.0436,
-      "roi1y": -0.6449,
-      "ytd": -0.5039
+      "price": 0.536317732009,
+      "changePct24h": -0.0166,
+      "roi7d": -0.1628,
+      "roi1m": -0.3276,
+      "roi3m": -0.0507,
+      "roi1y": -0.6475,
+      "ytd": -0.5076
     },
     {
       "ticker": "ssiGameFi",
-      "price": 0.685851058456,
-      "changePct24h": 0.0042,
-      "roi7d": -0.1653,
-      "roi1m": -0.27,
-      "roi3m": -0.1189,
-      "roi1y": -0.6853,
-      "ytd": -0.5297
+      "price": 0.682516150364,
+      "changePct24h": -0.0054,
+      "roi7d": -0.1694,
+      "roi1m": -0.2735,
+      "roi3m": -0.1232,
+      "roi1y": -0.6868,
+      "ytd": -0.532
     },
     {
       "ticker": "ssiNFT",
-      "price": 1.419738136123,
-      "changePct24h": 0.0187,
-      "roi7d": -0.2285,
-      "roi1m": -0.3804,
-      "roi3m": -0.33,
-      "roi1y": -0.6621,
-      "ytd": -0.5347
+      "price": 1.402045672866,
+      "changePct24h": 0.0014,
+      "roi7d": -0.2381,
+      "roi1m": -0.3882,
+      "roi3m": -0.3383,
+      "roi1y": -0.6663,
+      "ytd": -0.5405
     }
   ],
   "hotNews": [
@@ -796,39 +810,25 @@
       "releaseTime": 1795481704000
     },
     {
-      "id": "2125039712290942978",
-      "title": "Valued at approximately $12.2 million, a certain whale/institution withdrew 3.345 trillion PEPE from Binance within six days\n",
-      "summary": "This whale/institution has withdrawn a total of 3.345 trillion PEPE from Binance over 6 days, worth approximately $12.2 million.\n\n[Odaily]",
-      "sourceLink": "https://sosovalue.com/hot/2125039712290942978?from=888001",
-      "releaseTime": 1795483660000
-    },
-    {
-      "id": "2124927682758008834",
-      "title": "The U.S. Department of Justice seeks to seize over $1.1 billion in USDC linked to the Binance hack incident",
-      "summary": "The U.S. Department of Justice has filed a civil forfeiture lawsuit seeking to seize over $1.1 billion in USDC related to the Binance hack. Prosecutors stated that the involved tokens had previously been frozen. Accordin",
-      "sourceLink": "https://sosovalue.com/hot/2124927682758008834?from=888001",
-      "releaseTime": 1795460451000
-    },
-    {
-      "id": "2124951540940877825",
-      "title": "BTCS sold approximately 27.3 thousand ETH to repay a $43.8 million Aave loan, reducing the borrowing by approximately 81%\n",
-      "summary": "Nasdaq-listed blockchain company BTCS sold approximately 27.3 thousand ETH on November 20 and used the proceeds to repay a loan from the decentralized lending protocol Aave. Documents filed by the company on Monday show ",
-      "sourceLink": "https://sosovalue.com/hot/2124951540940877825?from=888001",
-      "releaseTime": 1795462732000
-    },
-    {
-      "id": "2125057611701366786",
-      "title": "UPBIT lists RPL, ACU, DBR, ON and supports multiple trading pairs",
-      "summary": "UPBIT will list Rocket Pool (RPL), Acurast (ACU), deBridge (DBR), and Orochi Network (ON) for trading on November 24.\n\nRPL and ACU support BTC and USDT trading pairs, DBR supports BTC and USDT trading pairs, and ON suppo",
-      "sourceLink": "https://sosovalue.com/hot/2125057611701366786?from=888001",
-      "releaseTime": 1795487978000
-    },
-    {
       "id": "2125067190514429953",
       "title": "$33.39 million position, a whale shorted 200 thousand shares of Nvidia at $167\n",
       "summary": "A whale made a short position of 200,000 Nvidia shares at $167 after Nvidia rebounded 30%, with a position value of $33.39 million, becoming the largest Nvidia short on Hyperliquid.\n\nThe whale's current short position of",
       "sourceLink": "https://sosovalue.com/hot/2125067190514429953?from=888001",
       "releaseTime": 1795490230000
+    },
+    {
+      "id": "2125077661148078081",
+      "title": "Bitcoin Spot ETF saw a total net outflow of 569.74M USD yesterday, marking a 5 days of consistent outflow",
+      "summary": "<p>According to SoSoValue data, Bitcoin spot ETF saw a total net outflow of 569.74M USD yesterday (Eastern Time, November 23th).</p><br><p>The Bitcoin Spot ETF with the highest net inflow yesterday was Fidelity's ETF FBT",
+      "sourceLink": "https://sosovalue.com/hot/2125077661148078081?from=888001",
+      "releaseTime": 1795496396213
+    },
+    {
+      "id": "2125039712290942978",
+      "title": "Valued at approximately $12.2 million, a certain whale/institution withdrew 3.345 trillion PEPE from Binance within six days\n",
+      "summary": "This whale/institution has withdrawn a total of 3.345 trillion PEPE from Binance over 6 days, worth approximately $12.2 million.\n\n[Odaily]",
+      "sourceLink": "https://sosovalue.com/hot/2125039712290942978?from=888001",
+      "releaseTime": 1795483660000
     },
     {
       "id": "2125023053622501377",
@@ -838,11 +838,25 @@
       "releaseTime": 1795479785000
     },
     {
-      "id": "2125074658604355585",
-      "title": "Bithumb will list ON, SANC, and SQD tokens on the KRW market\n",
-      "summary": "Korean crypto exchange Bithumb will list ON, SANC, and SQD tokens on the KRW market, with specific trading launch times subject to official announcements.\n\n[Odaily]",
-      "sourceLink": "https://sosovalue.com/hot/2125074658604355585?from=888001",
-      "releaseTime": 1795492055000
+      "id": "2125057611701366786",
+      "title": "UPBIT lists RPL, ACU, DBR, ON and supports multiple trading pairs",
+      "summary": "UPBIT will list Rocket Pool (RPL), Acurast (ACU), deBridge (DBR), and Orochi Network (ON) for trading on November 24.\n\nRPL and ACU support BTC and USDT trading pairs, DBR supports BTC and USDT trading pairs, and ON suppo",
+      "sourceLink": "https://sosovalue.com/hot/2125057611701366786?from=888001",
+      "releaseTime": 1795487978000
+    },
+    {
+      "id": "2125048870507339778",
+      "title": "Jensen Huang, CEO of Nvidia, is reportedly disclosed more extramarital affairs to the board before his reinstatement",
+      "summary": "According to a report by The Wall Street Journal, on Sunday, Nvidia CEO Jensen Huang disclosed additional extramarital affairs to the company's board of directors, after which the board unanimously voted to reinstate him",
+      "sourceLink": "https://sosovalue.com/hot/2125048870507339778?from=888001",
+      "releaseTime": 1795499191000
+    },
+    {
+      "id": "2125139161266262017",
+      "title": "An address sold 72 WBTC and made a profit of $78,000\n",
+      "summary": "An address that accumulated WBTC at an average price of $59,231 between November 20 and 21 sold 72 WBTC at a price of $60,326.53 four hours ago, worth $4.35 million, making a profit of $78 thousand.\n\nPreviously, this add",
+      "sourceLink": "https://sosovalue.com/hot/2125139161266262017?from=888001",
+      "releaseTime": 1795507432000
     }
   ],
   "treasuries": [

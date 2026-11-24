@@ -1,11 +1,12 @@
-# BasisFlow Terminal
+# BasisFlow Terminal (v1.4.0)
 
-**Institutional Funding-Basis, 500ms Live WebSocket L2 Microstructure, Delta-Neutral Hedge Builder & Risk-Gated Execution Desk**  
+**Institutional Funding-Basis, 500ms Live WebSocket L2 Microstructure, Delta-Neutral Hedge Builder, Empirical Bootstrap Monte Carlo Risk Desk & Live SoSoValue OpenAPI v1 Intelligence**  
 Built for **SoSoValue × ValueChain × SoDEX WaveHack (Wave 3)**
 
-- **Live Demo (Zero-Auth, Loads Real SoDEX Mainnet + 500ms WebSocket L2 Immediately):** https://andreyjackkali.github.io/basisflow-terminal/
+- **Live Terminal (Zero-Auth, Loads Real SoDEX Mainnet + 500ms WS L2 + Live Verified SoSoValue Snapshot Immediately):** https://andreyjackkali.github.io/basisflow-terminal/
+- **Interactive 8-Slide Pitch Deck:** https://andreyjackkali.github.io/basisflow-terminal/deck.html
+- **60s Narrated HD Walkthrough Video:** https://andreyjackkali.github.io/basisflow-terminal/demo.mp4 (and [`docs/demo.mp4`](docs/demo.mp4))
 - **Repository:** https://github.com/AndreyJackKali/basisflow-terminal
-- **HD Walkthrough Video:** [`docs/demo.mp4`](docs/demo.mp4)
 
 ![BasisFlow Terminal Live Preview](docs/preview.png)
 

@@ -4,6 +4,8 @@ import {
   BarChart3,
   Cpu,
   KeyRound,
+  PlayCircle,
+  Presentation,
   RefreshCw,
   ShieldCheck,
   Terminal,
@@ -534,28 +536,50 @@ export default function App() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className="max-w-7xl mx-auto px-4 flex gap-1 overflow-x-auto border-t border-slate-800/60">
-          {(
-            [
-              ['scanner', '1. Basis & Carry Scanner', Activity],
-              ['microstructure', '2. L2 Microstructure & Regime', BarChart3],
-              ['execution', '3. Risk-Gated Execution Desk', ShieldCheck],
-              ['sosovalue', '4. ETF & SSI Intelligence (SoSoValue)', KeyRound],
-            ] as const
-          ).map(([key, label, Icon]) => (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key)}
-              className={`px-3.5 py-2 text-xs font-medium inline-flex items-center gap-1.5 border-b-2 transition whitespace-nowrap ${
-                activeTab === key
-                  ? 'border-emerald-400 text-emerald-300 bg-emerald-500/5'
-                  : 'border-transparent text-slate-400 hover:text-slate-200'
-              }`}
+        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between gap-2 overflow-x-auto border-t border-slate-800/60">
+          <div className="flex gap-1">
+            {(
+              [
+                ['scanner', '1. Basis & Carry Scanner', Activity],
+                ['microstructure', '2. L2 Microstructure & Regime', BarChart3],
+                ['execution', '3. Risk-Gated Execution Desk', ShieldCheck],
+                ['sosovalue', '4. ETF & SSI Intelligence (SoSoValue)', KeyRound],
+              ] as const
+            ).map(([key, label, Icon]) => (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={`px-3.5 py-2 text-xs font-medium inline-flex items-center gap-1.5 border-b-2 transition whitespace-nowrap ${
+                  activeTab === key
+                    ? 'border-emerald-400 text-emerald-300 bg-emerald-500/5'
+                    : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {label}
+              </button>
+            ))}
+          </div>
+          <div className="hidden md:flex items-center gap-2 py-1 shrink-0 text-[11px] font-mono">
+            <a
+              href="./deck.html"
+              target="_blank"
+              rel="noreferrer"
+              className="px-2 py-1 rounded border border-cyan-500/35 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 inline-flex items-center gap-1 transition"
             >
-              <Icon className="w-3.5 h-3.5" />
-              {label}
-            </button>
-          ))}
+              <Presentation className="w-3 h-3" />
+              Pitch Deck
+            </a>
+            <a
+              href="./demo.mp4"
+              target="_blank"
+              rel="noreferrer"
+              className="px-2 py-1 rounded border border-emerald-500/35 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 inline-flex items-center gap-1 transition"
+            >
+              <PlayCircle className="w-3 h-3" />
+              60s Demo
+            </a>
+          </div>
         </div>
       </header>
 
