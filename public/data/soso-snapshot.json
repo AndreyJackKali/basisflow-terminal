@@ -1,16 +1,16 @@
 {
   "schemaVersion": "1.3.0",
   "source": "SoSoValue OpenAPI v1 (Live Verified Snapshot)",
-  "fetchedAt": "2026-11-24T10:40:50.955Z",
+  "fetchedAt": "2026-11-24T21:38:22.160Z",
   "fetchedDateUtc": "2026-11-24",
   "endpointsVerified": 24,
   "marketOverview": {
-    "totalMarketCap": 2053762208403.5474,
-    "totalMarketCapChangePct": -2.02552535,
-    "totalVolume24h": 101509409114.73,
-    "ethGasGwei": 0.124394742,
-    "btcGasSatVb": 1,
-    "asOf": 1795516847162
+    "totalMarketCap": 2052514483110.8564,
+    "totalMarketCapChangePct": -2.16123714,
+    "totalVolume24h": 74803592348.96,
+    "ethGasGwei": 0.2164978,
+    "btcGasSatVb": 0.12,
+    "asOf": 1795556297956
   },
   "etfFlows": {
     "BTC": [
@@ -600,13 +600,13 @@
   "ssiIndices": [
     {
       "ticker": "ssiDeFi",
-      "price": 6.008365401431,
-      "changePct24h": -0.0132,
-      "roi7d": -0.1636,
-      "roi1m": -0.2779,
-      "roi3m": -0.1346,
-      "roi1y": -0.0906,
-      "ytd": 0.1518,
+      "price": 5.840728235378,
+      "changePct24h": -0.0489,
+      "roi7d": -0.187,
+      "roi1m": -0.2981,
+      "roi3m": -0.1588,
+      "roi1y": -0.1159,
+      "ytd": 0.1197,
       "constituents": [
         {
           "symbol": "pancakeswap",
@@ -652,53 +652,53 @@
     },
     {
       "ticker": "ssiAI",
-      "price": 3.428645245457,
-      "changePct24h": -0.0457,
-      "roi7d": -0.0313,
-      "roi1m": -0.2359,
-      "roi3m": -0.0288,
-      "roi1y": -0.4878,
-      "ytd": -0.2427
+      "price": 3.345267841446,
+      "changePct24h": -0.0508,
+      "roi7d": -0.0548,
+      "roi1m": -0.2545,
+      "roi3m": -0.0524,
+      "roi1y": -0.5003,
+      "ytd": -0.2611
     },
     {
       "ticker": "ssiRWA",
-      "price": 3.448537535978,
-      "changePct24h": -0.0287,
-      "roi7d": -0.2662,
-      "roi1m": -0.4058,
-      "roi3m": -0.2897,
-      "roi1y": -0.4409,
-      "ytd": -0.3081
+      "price": 3.45548078468,
+      "changePct24h": -0.0344,
+      "roi7d": -0.2648,
+      "roi1m": -0.4046,
+      "roi3m": -0.2883,
+      "roi1y": -0.4398,
+      "ytd": -0.3067
     },
     {
       "ticker": "ssiCeFi",
-      "price": 17.151414364676,
-      "changePct24h": -0.0178,
-      "roi7d": -0.1923,
-      "roi1m": -0.2553,
-      "roi3m": -0.172,
-      "roi1y": -0.4344,
-      "ytd": -0.3803
+      "price": 17.215657961928,
+      "changePct24h": -0.0189,
+      "roi7d": -0.1892,
+      "roi1m": -0.2525,
+      "roi3m": -0.1689,
+      "roi1y": -0.4323,
+      "ytd": -0.378
     },
     {
       "ticker": "ssiLayer1",
-      "price": 7.45683854458,
-      "changePct24h": -0.0189,
-      "roi7d": -0.1691,
-      "roi1m": -0.2789,
-      "roi3m": -0.2278,
-      "roi1y": -0.4281,
-      "ytd": -0.3808
+      "price": 7.428195326257,
+      "changePct24h": -0.0259,
+      "roi7d": -0.1723,
+      "roi1m": -0.2817,
+      "roi3m": -0.2308,
+      "roi1y": -0.4303,
+      "ytd": -0.3832
     },
     {
       "ticker": "ssiMAG7",
-      "price": 10.578239091004,
-      "changePct24h": -0.0244,
-      "roi7d": -0.1863,
-      "roi1m": -0.2749,
-      "roi3m": -0.1976,
-      "roi1y": -0.4742,
-      "ytd": -0.399,
+      "price": 10.580900151573,
+      "changePct24h": -0.0246,
+      "roi7d": -0.1861,
+      "roi1m": -0.2748,
+      "roi3m": -0.1974,
+      "roi1y": -0.474,
+      "ytd": -0.3989,
       "constituents": [
         {
           "symbol": "solana",
@@ -732,131 +732,131 @@
     },
     {
       "ticker": "ssiSocialFi",
-      "price": 3.816390802851,
-      "changePct24h": -0.0281,
-      "roi7d": -0.1796,
-      "roi1m": -0.298,
-      "roi3m": -0.3103,
-      "roi1y": -0.4541,
-      "ytd": -0.4249
+      "price": 3.752206643843,
+      "changePct24h": -0.0596,
+      "roi7d": -0.1934,
+      "roi1m": -0.3098,
+      "roi3m": -0.3219,
+      "roi1y": -0.4633,
+      "ytd": -0.4346
     },
     {
       "ticker": "ssiDePIN",
-      "price": 1.302750817953,
-      "changePct24h": -0.0127,
-      "roi7d": -0.1897,
-      "roi1m": -0.3543,
-      "roi3m": -0.1098,
-      "roi1y": -0.6668,
-      "ytd": -0.4722
+      "price": 1.27859376994,
+      "changePct24h": -0.0346,
+      "roi7d": -0.2047,
+      "roi1m": -0.3663,
+      "roi3m": -0.1263,
+      "roi1y": -0.6729,
+      "ytd": -0.482
     },
     {
       "ticker": "ssiMeme",
-      "price": 4.843474660846,
-      "changePct24h": -0.0048,
-      "roi7d": -0.1981,
-      "roi1m": -0.3068,
-      "roi3m": -0.2822,
-      "roi1y": -0.6273,
-      "ytd": -0.4967
+      "price": 4.810321385414,
+      "changePct24h": -0.0263,
+      "roi7d": -0.2036,
+      "roi1m": -0.3116,
+      "roi3m": -0.2871,
+      "roi1y": -0.6299,
+      "ytd": -0.5002
     },
     {
       "ticker": "ssiPayFi",
-      "price": 12.170580729173,
-      "changePct24h": -0.0098,
-      "roi7d": -0.1215,
-      "roi1m": -0.2878,
-      "roi3m": -0.2563,
-      "roi1y": -0.5795,
-      "ytd": -0.5031
+      "price": 12.054786205162,
+      "changePct24h": -0.0235,
+      "roi7d": -0.1299,
+      "roi1m": -0.2946,
+      "roi3m": -0.2633,
+      "roi1y": -0.5835,
+      "ytd": -0.5078
     },
     {
       "ticker": "ssiLayer2",
-      "price": 0.536317732009,
-      "changePct24h": -0.0166,
-      "roi7d": -0.1628,
-      "roi1m": -0.3276,
-      "roi3m": -0.0507,
-      "roi1y": -0.6475,
-      "ytd": -0.5076
+      "price": 0.520038949026,
+      "changePct24h": -0.0448,
+      "roi7d": -0.1882,
+      "roi1m": -0.348,
+      "roi3m": -0.0796,
+      "roi1y": -0.6582,
+      "ytd": -0.5225
     },
     {
       "ticker": "ssiGameFi",
-      "price": 0.682516150364,
-      "changePct24h": -0.0054,
-      "roi7d": -0.1694,
-      "roi1m": -0.2735,
-      "roi3m": -0.1232,
-      "roi1y": -0.6868,
-      "ytd": -0.532
+      "price": 0.663134076885,
+      "changePct24h": -0.0327,
+      "roi7d": -0.193,
+      "roi1m": -0.2941,
+      "roi3m": -0.1481,
+      "roi1y": -0.6957,
+      "ytd": -0.5453
     },
     {
       "ticker": "ssiNFT",
-      "price": 1.402045672866,
-      "changePct24h": 0.0014,
-      "roi7d": -0.2381,
-      "roi1m": -0.3882,
-      "roi3m": -0.3383,
-      "roi1y": -0.6663,
-      "ytd": -0.5405
+      "price": 1.371960898415,
+      "changePct24h": -0.0332,
+      "roi7d": -0.2545,
+      "roi1m": -0.4013,
+      "roi3m": -0.3525,
+      "roi1y": -0.6734,
+      "ytd": -0.5504
     }
   ],
   "hotNews": [
     {
-      "id": "2125026984568033282",
-      "title": "Jensen Huang resumes role as CEO of Nvidia, stock surges over 35%",
-      "summary": "NVIDIA's board unanimously approved on November 23, 2026, the reinstatement of Jensen Huang as president, chief executive officer, and director, effective immediately. NVIDIA stated that the board made the decision after",
-      "sourceLink": "https://sosovalue.com/hot/2125026984568033282?from=888001",
-      "releaseTime": 1795481704000
+      "id": "2125168075007942658",
+      "title": "Lookonchain: Ansem is suspected of a hack, and the hacker has transferred 2.15 million USDC\n",
+      "summary": "Ansem (@blknoiz06) appears to have been hacked. The hacker has transferred funds obtained from selling meme coins to the Arbitrum address 0xAC33, and so far $2.15 million in USDC has been moved.\n\n[Odaily]",
+      "sourceLink": "https://sosovalue.com/hot/2125168075007942658?from=888001",
+      "releaseTime": 1795514198000
     },
     {
-      "id": "2125067190514429953",
-      "title": "$33.39 million position, a whale shorted 200 thousand shares of Nvidia at $167\n",
-      "summary": "A whale made a short position of 200,000 Nvidia shares at $167 after Nvidia rebounded 30%, with a position value of $33.39 million, becoming the largest Nvidia short on Hyperliquid.\n\nThe whale's current short position of",
-      "sourceLink": "https://sosovalue.com/hot/2125067190514429953?from=888001",
-      "releaseTime": 1795490230000
+      "id": "2125249361209987073",
+      "title": "Coinkite releases post-mortem on COLDCARD seed generation flaw",
+      "summary": "Bitcoin hardware wallet manufacturer Coinkite has today released a full retrospective on the COLDCARD seed generation flaw. The company stated that all thefts were carried out by offline regeneration of affected private ",
+      "sourceLink": "https://sosovalue.com/hot/2125249361209987073?from=888001",
+      "releaseTime": 1795533708000
     },
     {
-      "id": "2125077661148078081",
-      "title": "Bitcoin Spot ETF saw a total net outflow of 569.74M USD yesterday, marking a 5 days of consistent outflow",
-      "summary": "<p>According to SoSoValue data, Bitcoin spot ETF saw a total net outflow of 569.74M USD yesterday (Eastern Time, November 23th).</p><br><p>The Bitcoin Spot ETF with the highest net inflow yesterday was Fidelity's ETF FBT",
-      "sourceLink": "https://sosovalue.com/hot/2125077661148078081?from=888001",
-      "releaseTime": 1795496396213
+      "id": "2125184128502673410",
+      "title": "Ansem initially suspects that the Pump wallet breach is related to unauthorized access to Bullpen's profile.\n",
+      "summary": "According to Ansem's monitoring, his Pump wallet was attacked and he is currently trying to determine the cause. Ansem initially suspects that the attack may be related to unauthorized access to his Bullpen profile, whic",
+      "sourceLink": "https://sosovalue.com/hot/2125184128502673410?from=888001",
+      "releaseTime": 1795518257000
     },
     {
-      "id": "2125039712290942978",
-      "title": "Valued at approximately $12.2 million, a certain whale/institution withdrew 3.345 trillion PEPE from Binance within six days\n",
-      "summary": "This whale/institution has withdrawn a total of 3.345 trillion PEPE from Binance over 6 days, worth approximately $12.2 million.\n\n[Odaily]",
-      "sourceLink": "https://sosovalue.com/hot/2125039712290942978?from=888001",
-      "releaseTime": 1795483660000
+      "id": "2125157726189215745",
+      "title": "Anthropic's pre-market decline widened to 5%, breaking below its IPO offering price of $83",
+      "summary": "Anthropic (ANT.O) pre-market trading on US stocks extended its decline to 5%, falling below the IPO issue price of $83.\n\n[PANews]",
+      "sourceLink": "https://sosovalue.com/hot/2125157726189215745?from=888001",
+      "releaseTime": 1795518744000
     },
     {
-      "id": "2125023053622501377",
-      "title": "The U.S. CFTC issued guidance: derivatives platforms may discount certain crypto assets when including them in the financial resources required for operational costs",
-      "summary": "U.S. Commodity Futures Trading Commission (CFTC) staff issued an official staff guidance allowing regulated derivatives platforms, subject to meeting specific value haircuts, to count Bitcoin (BTC), Ethereum (ETH), and e",
-      "sourceLink": "https://sosovalue.com/hot/2125023053622501377?from=888001",
-      "releaseTime": 1795479785000
+      "id": "2125201513680474113",
+      "title": "Binance said it is cooperating with the U.S. Department of Justice to advance the proceedings for confiscating stolen assets",
+      "summary": "Binance posted that it is closely coordinating with the U.S. Department of Justice (DOJ) and industry partners assisting in freezing the involved assets, and will continue to cooperate in the asset forfeiture process to ",
+      "sourceLink": "https://sosovalue.com/hot/2125201513680474113?from=888001",
+      "releaseTime": 1795522273000
     },
     {
-      "id": "2125057611701366786",
-      "title": "UPBIT lists RPL, ACU, DBR, ON and supports multiple trading pairs",
-      "summary": "UPBIT will list Rocket Pool (RPL), Acurast (ACU), deBridge (DBR), and Orochi Network (ON) for trading on November 24.\n\nRPL and ACU support BTC and USDT trading pairs, DBR supports BTC and USDT trading pairs, and ON suppo",
-      "sourceLink": "https://sosovalue.com/hot/2125057611701366786?from=888001",
-      "releaseTime": 1795487978000
+      "id": "2125248259455279106",
+      "title": "Anchorage Digital plans to establish an asset management subsidiary and launch a bitcoin-denominated fund\n",
+      "summary": "Anchorage Digital plans to establish an asset management subsidiary and launch a bitcoin-denominated fund.\n\n[Odaily]",
+      "sourceLink": "https://sosovalue.com/hot/2125248259455279106?from=888001",
+      "releaseTime": 1795533491000
     },
     {
-      "id": "2125048870507339778",
-      "title": "Jensen Huang, CEO of Nvidia, is reportedly disclosed more extramarital affairs to the board before his reinstatement",
-      "summary": "According to a report by The Wall Street Journal, on Sunday, Nvidia CEO Jensen Huang disclosed additional extramarital affairs to the company's board of directors, after which the board unanimously voted to reinstate him",
-      "sourceLink": "https://sosovalue.com/hot/2125048870507339778?from=888001",
-      "releaseTime": 1795499191000
+      "id": "2125214873283420162",
+      "title": "Beosin's parent company, Lianan Technology, has completed a strategic financing of tens of millions of yuan, with the Shanghai Blockchain Innovation Fund participating in the investment.",
+      "summary": "Beosin's parent company, Chengdu ChainSafe Technology Co., Ltd., announced the completion of a new round of strategic financing worth several million yuan. The sole investor in this round is the Shanghai Blockchain Innov",
+      "sourceLink": "https://sosovalue.com/hot/2125214873283420162?from=888001",
+      "releaseTime": 1795525362000
     },
     {
-      "id": "2125139161266262017",
-      "title": "An address sold 72 WBTC and made a profit of $78,000\n",
-      "summary": "An address that accumulated WBTC at an average price of $59,231 between November 20 and 21 sold 72 WBTC at a price of $60,326.53 four hours ago, worth $4.35 million, making a profit of $78 thousand.\n\nPreviously, this add",
-      "sourceLink": "https://sosovalue.com/hot/2125139161266262017?from=888001",
-      "releaseTime": 1795507432000
+      "id": "2125225886905217025",
+      "title": "$40 million to $50 million buyback proposal for SKY, Sky aims to ease stUSDS withdrawal difficulties\n",
+      "summary": "A lender in the Sky Protocol stUSDS pool has proposed using $40 million to $50 million of reserve funds to repurchase SKY off-market from borrowers, freeing up capital for withdrawals by depositors. The USDS obtained fro",
+      "sourceLink": "https://sosovalue.com/hot/2125225886905217025?from=888001",
+      "releaseTime": 1795528033000
     }
   ],
   "treasuries": [
