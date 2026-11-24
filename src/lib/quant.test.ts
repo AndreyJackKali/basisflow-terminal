@@ -1,13 +1,16 @@
 import { describe, it, expect } from 'vitest';
 import {
   buildCounterfactualCurves,
+  buildEtfFundingCrossChecks,
   classifyAsset,
   computeAnnualizedFundingApr,
   computeBasisBps,
   computeBidAskSpreadBps,
   computeDeltaNeutralCarry,
+  computeEtfFlowStats,
   computeOrderbookImbalance,
   computeSpotPerpSpreadBps,
+  computeSsiSectorFunding,
   detectMarketRegime,
   enrichMarkets,
   evaluatePreTradeRisk,
@@ -491,5 +494,93 @@ describe('BasisFlow Quant Engine', () => {
     expect(lines[0]).toContain('annualizedFundingAprPct');
     expect(lines[1]).toContain('BTC-USD,Crypto,63000');
     expect(lines[1]).toContain('vBTC_vUSDC');
+  });
+
+  it('computes SoSoValue US Spot ETF flow stats, streak, and 30d z-score accurately', () => {
+    const rows = [
+      { date: '2026-11-20', totalNetInflow: -669_000_000, totalValueTraded: 4_700_000_000, totalNetAssets: 71_345_000_000, cumNetInflow: 52_843_000_000 },
+      { date: '2026-11-19', totalNetInflow: -582_000_000, totalValueTraded: 3_235_000_000, totalNetAssets: 76_549_000_000, cumNetInflow: 53_512_000_000 },
+      { date: '2026-11-18', totalNetInflow: 120_000_000, totalValueTraded: 2_800_000_000, totalNetAssets: 77_000_000_000, cumNetInflow: 54_094_000_000 },
+      { date: '2026-11-17', totalNetInflow: 210_000_000, totalValueTraded: 2_500_000_000, totalNetAssets: 76_800_000_000, cumNetInflow: 53_974_000_000 },
+      { date: '2026-11-16', totalNetInflow: 95_000_000, totalValueTraded: 2_200_000_000, totalNetAssets: 76_500_000_000, cumNetInflow: 53_764_000_000 },
+    ];
+    const stats = computeEtfFlowStats(rows);
+    expect(stats.latestDate).toBe('2026-11-20');
+    expect(stats.fiveDayNetInflow).toBe(-826_000_000);
+    expect(stats.streakDays).toBe(-2);
+    expect(stats.zScore30d).toBeLessThan(-1);
+    expect(stats.totalNetAssets).toBe(71_345_000_000);
+  });
+
+  it('cross-checks SoSoValue ETF outflows against positive SoDEX perp funding to flag carry-short divergence', () => {
+    const markets = enrichMarkets(
+      [sampleContract],
+      [{
+        symbol: 'BTC-USD', lastPx: '88000', openPx: '87000', highPx: '89000', lowPx: '86000',
+        volume: '500', quoteVolume: '44000000', vwap: '88000', change: '1000', changePct: 1.15,
+        askPx: '88005', askSz: '5', bidPx: '87995', bidSz: '5', fundingRate: '0.00002', nextFundingTime: 0,
+      }],
+      [{ symbol: 'BTC-USD', openInterest: '300', markPrice: '88040', indexPrice: '88000', fundingRate: '0.00002', nextFundingTime: 0 }],
+      [{ symbol: 'BTC-USD', bidPx: '87995', bidSz: '5', askPx: '88005', askSz: '5' }],
+      [{ id: 1, name: 'vBTC_vUSDC', displayName: 'BTC/USDC', baseCoin: 'vBTC', quoteCoin: 'vUSDC', pricePrecision: 2 }],
+      [{ symbol: 'vBTC_vUSDC', lastPx: '87980', bidPx: '87975', askPx: '87985', quoteVolume: '4000000', changePct: 1.1 }],
+    );
+
+    const checks = buildEtfFundingCrossChecks(
+      {
+        BTC: [
+          { date: '2026-11-20', totalNetInflow: -500_000_000, totalValueTraded: 4e9, totalNetAssets: 71e9, cumNetInflow: 52e9 },
+          { date: '2026-11-19', totalNetInflow: -300_000_000, totalValueTraded: 3e9, totalNetAssets: 72e9, cumNetInflow: 52.5e9 },
+        ],
+        ETH: [],
+        SOL: [],
+        XRP: [],
+      },
+      markets,
+    );
+
+    const btc = checks.find((c) => c.asset === 'BTC')!;
+    expect(btc.hasLivePerp).toBe(true);
+    expect(btc.perpFundingAprPct).toBeCloseTo(17.52, 1);
+    expect(btc.regimeTag).toBe('DIVERGENCE: CARRY SHORT');
+  });
+
+  it('joins SoSoValue SSI indices with overlapping SoDEX sector perp funding averages', () => {
+    const markets = enrichMarkets(
+      [
+        sampleContract,
+        { ...sampleContract, id: 2, name: 'ETH-USD', displayName: 'ETH-USD', baseCoin: 'ETH' },
+      ],
+      [
+        {
+          symbol: 'BTC-USD', lastPx: '88000', openPx: '88000', highPx: '88500', lowPx: '87500',
+          volume: '100', quoteVolume: '8800000', vwap: '88000', change: '0', changePct: 0,
+          askPx: '88001', askSz: '1', bidPx: '87999', bidSz: '1', fundingRate: '0.00001', nextFundingTime: 0,
+        },
+        {
+          symbol: 'ETH-USD', lastPx: '3000', openPx: '3000', highPx: '3050', lowPx: '2950',
+          volume: '1000', quoteVolume: '3000000', vwap: '3000', change: '0', changePct: 0,
+          askPx: '3001', askSz: '5', bidPx: '2999', bidSz: '5', fundingRate: '0.00003', nextFundingTime: 0,
+        },
+      ],
+      [
+        { symbol: 'BTC-USD', openInterest: '100', markPrice: '88000', indexPrice: '88000', fundingRate: '0.00001', nextFundingTime: 0 },
+        { symbol: 'ETH-USD', openInterest: '1000', markPrice: '3000', indexPrice: '3000', fundingRate: '0.00003', nextFundingTime: 0 },
+      ],
+      [
+        { symbol: 'BTC-USD', bidPx: '87999', bidSz: '2', askPx: '88001', askSz: '2' },
+        { symbol: 'ETH-USD', bidPx: '2999', bidSz: '5', askPx: '3001', askSz: '5' },
+      ],
+      [],
+      [],
+    );
+
+    const rows = computeSsiSectorFunding(
+      [{ ticker: 'ssiMAG7', price: 10.67, changePct24h: -0.014, roi7d: -0.179, roi1m: -0.268, roi3m: -0.19, roi1y: -0.469, ytd: -0.393 }],
+      markets,
+    );
+    expect(rows[0].matchedSymbols).toEqual(['BTC-USD', 'ETH-USD']);
+    // Average of +8.76% and +26.28% = +17.52% APR
+    expect(rows[0].avgFundingAprPct).toBeCloseTo(17.52, 1);
   });
 });

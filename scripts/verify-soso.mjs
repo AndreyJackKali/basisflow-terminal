@@ -6,7 +6,7 @@
  */
 
 const BASE = 'https://openapi.sosovalue.com/openapi/v1';
-const key = process.env.SOSO_API_KEY || '';
+const key = (process.env.SOSO_API_KEY || '').trim();
 const ORIGIN = 'https://andreyjackkali.github.io';
 
 console.log('=== BasisFlow Terminal — SoSoValue OpenAPI v1 Verification ===\n');
@@ -17,7 +17,7 @@ const optRes = await fetch(`${BASE}/currencies`, {
     Origin: ORIGIN,
     'Access-Control-Request-Method': 'GET',
     'Access-Control-Request-Headers': 'x-soso-api-key',
-    'User-Agent': 'BasisFlowTerminal/1.0',
+    'User-Agent': 'BasisFlowTerminal/1.3',
   },
 });
 console.log(
@@ -25,7 +25,15 @@ console.log(
 );
 
 const endpoints = key
-  ? ['/etfs/summary-history?type=us-btc-spot', '/indices', '/news/hot?pageSize=5', '/btc-treasuries']
+  ? [
+      '/etfs/summary-history?symbol=BTC&country_code=US&limit=10',
+      '/etfs/summary-history?symbol=ETH&country_code=US&limit=10',
+      '/indices',
+      '/indices/ssiMAG7/market-snapshot',
+      '/market/overview',
+      '/news/hot?page=1&page_size=5',
+      '/btc-treasuries',
+    ]
   : ['/currencies'];
 
 let okCount = 0;
@@ -34,14 +42,15 @@ for (const ep of endpoints) {
   const res = await fetch(`${BASE}${ep}`, {
     headers: {
       'x-soso-api-key': key || 'CONTRACT_CHECK_NO_KEY',
-      'User-Agent': 'BasisFlowTerminal/1.0',
+      'User-Agent': 'BasisFlowTerminal/1.3',
     },
   });
   const ms = Date.now() - t0;
   const body = await res.json().catch(() => ({}));
   if (key) {
-    if (res.ok) okCount += 1;
-    console.log(`${res.ok ? 'PASS' : 'FAIL'} | HTTP ${res.status} | ${ms}ms | ${ep}`);
+    const valid = res.ok && (body?.code === 0 || body?.code === undefined);
+    if (valid) okCount += 1;
+    console.log(`${valid ? 'PASS' : 'FAIL'} | HTTP ${res.status} | ${ms}ms | ${ep}`);
   } else {
     const validAuthGate = res.status === 401 && body?.code === 400101;
     if (validAuthGate) okCount += 1;

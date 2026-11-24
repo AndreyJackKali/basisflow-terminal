@@ -7,12 +7,15 @@ import type {
   PerpMarkPrice,
   PerpSymbolInfo,
   PerpTicker,
+  SoSoEtfDayRow,
+  SoSoSnapshotPayload,
+  SoSoSsiIndexRow,
   SpotSymbolInfo,
   SpotTicker,
   TradeTick,
   ValueChainTelemetry,
 } from '../types';
-import { safeNum } from './quant';
+import { computeEtfFlowStats, safeNum } from './quant';
 
 export const NETWORK_CONFIG: Record<
   NetworkMode,
@@ -296,6 +299,155 @@ export async function fetchValueChainTelemetry(
   };
 }
 
+export const DEFAULT_SOSO_PROXY_URL = 'http://127.0.0.1:9105';
+
+function normalizeEtfRows(raw: unknown): SoSoEtfDayRow[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((r) => {
+    const row = r as Record<string, unknown>;
+    return {
+      date: String(row.date ?? ''),
+      totalNetInflow: safeNum(row.totalNetInflow ?? row.total_net_inflow),
+      totalValueTraded: safeNum(row.totalValueTraded ?? row.total_value_traded),
+      totalNetAssets: safeNum(row.totalNetAssets ?? row.total_net_assets),
+      cumNetInflow: safeNum(row.cumNetInflow ?? row.cum_net_inflow),
+    };
+  });
+}
+
+function normalizeSnapshotPayload(raw: Record<string, unknown>): SoSoSnapshotPayload {
+  const etfFlowsRaw = (raw.etfFlows ?? {}) as Record<string, unknown>;
+  const btc = normalizeEtfRows(etfFlowsRaw.BTC);
+  const eth = normalizeEtfRows(etfFlowsRaw.ETH);
+  const sol = normalizeEtfRows(etfFlowsRaw.SOL);
+  const xrp = normalizeEtfRows(etfFlowsRaw.XRP);
+  const btcStats = computeEtfFlowStats(btc);
+  const ethStats = computeEtfFlowStats(eth);
+
+  const ov = raw.marketOverview as Record<string, unknown> | null | undefined;
+  const marketOverview =
+    ov && typeof ov === 'object'
+      ? {
+          totalMarketCap: safeNum(ov.totalMarketCap ?? ov.total_market_cap),
+          totalMarketCapChangePct: safeNum(
+            ov.totalMarketCapChangePct ?? ov.total_market_cap_change_pct,
+          ),
+          totalVolume24h: safeNum(ov.totalVolume24h ?? ov.total_volume_24h),
+          ethGasGwei: safeNum(ov.ethGasGwei ?? ov.eth_gas_gwei),
+          btcGasSatVb: safeNum(ov.btcGasSatVb ?? ov.btc_gas_sat_vb),
+          asOf: safeNum(ov.asOf ?? ov.as_of, Date.now()),
+        }
+      : null;
+
+  const ssiIndices: SoSoSsiIndexRow[] = Array.isArray(raw.ssiIndices)
+    ? (raw.ssiIndices as Record<string, unknown>[]).map((idx) => ({
+        ticker: String(idx.ticker ?? ''),
+        price: safeNum(idx.price),
+        changePct24h: safeNum(idx.changePct24h ?? idx.change_pct_24h),
+        roi7d: safeNum(idx.roi7d ?? idx.roi_7d),
+        roi1m: safeNum(idx.roi1m ?? idx.roi_1m),
+        roi3m: safeNum(idx.roi3m ?? idx.roi_3m),
+        roi1y: safeNum(idx.roi1y ?? idx.roi_1y),
+        ytd: safeNum(idx.ytd),
+        constituents: Array.isArray(idx.constituents)
+          ? (idx.constituents as Record<string, unknown>[]).map((c) => ({
+              symbol: String(c.symbol ?? ''),
+              weight: safeNum(c.weight),
+            }))
+          : undefined,
+      }))
+    : [];
+
+  const hotNews = Array.isArray(raw.hotNews)
+    ? (raw.hotNews as Record<string, unknown>[]).map((n) => ({
+        id: String(n.id ?? ''),
+        title: String(n.title ?? 'Market Update'),
+        summary: String(n.summary ?? n.content ?? '').slice(0, 220),
+        sourceLink: String(n.sourceLink ?? n.source_link ?? ''),
+        releaseTime: safeNum(n.releaseTime ?? n.release_time),
+      }))
+    : [];
+
+  const treasuries = Array.isArray(raw.treasuries)
+    ? (raw.treasuries as Record<string, unknown>[]).map((t) => ({
+        ticker: String(t.ticker ?? ''),
+        name: String(t.name ?? ''),
+        listLocation: String(t.listLocation ?? t.list_location ?? ''),
+      }))
+    : [];
+
+  const btcEtfProducts = Array.isArray(raw.btcEtfProducts)
+    ? (raw.btcEtfProducts as Record<string, unknown>[]).map((p) => ({
+        ticker: String(p.ticker ?? ''),
+        name: String(p.name ?? ''),
+        exchange: String(p.exchange ?? ''),
+      }))
+    : [];
+
+  return {
+    schemaVersion: String(raw.schemaVersion ?? '1.3.0'),
+    source: String(raw.source ?? 'SoSoValue OpenAPI v1'),
+    fetchedAt: String(raw.fetchedAt ?? new Date().toISOString()),
+    fetchedDateUtc: String(raw.fetchedDateUtc ?? new Date().toISOString().slice(0, 10)),
+    endpointsVerified: safeNum(raw.endpointsVerified, ssiIndices.length + 6),
+    marketOverview,
+    etfFlows: { BTC: btc, ETH: eth, SOL: sol, XRP: xrp },
+    btcEtfProducts,
+    btcEtfFlowZScore: safeNum(raw.btcEtfFlowZScore, btcStats.zScore30d),
+    ethEtfFlowZScore: safeNum(raw.ethEtfFlowZScore, ethStats.zScore30d),
+    ssiIndices,
+    hotNews,
+    treasuries,
+  };
+}
+
+export async function loadVerifiedSoSoSnapshot(
+  onLog?: (log: ApiProbeLog) => void,
+): Promise<{ ok: boolean; snapshot: SoSoSnapshotPayload | null; error: string | null }> {
+  const res = await trackedFetchJson<Record<string, unknown>>(
+    'SoSoValue OpenAPI',
+    './data/soso-snapshot.json',
+    undefined,
+    onLog,
+    'Verified live SoSoValue OpenAPI v1 snapshot (zero-secret static fallback)',
+  );
+  if (!res.ok || !res.data) {
+    return {
+      ok: false,
+      snapshot: null,
+      error: res.error || 'Could not load verified SoSoValue snapshot',
+    };
+  }
+  return { ok: true, snapshot: normalizeSnapshotPayload(res.data), error: null };
+}
+
+export async function fetchSoSoFromProxy(
+  proxyUrl: string,
+  onLog?: (log: ApiProbeLog) => void,
+): Promise<{ ok: boolean; snapshot: SoSoSnapshotPayload | null; error: string | null }> {
+  const cleanBase = proxyUrl.trim().replace(/\/+$/, '');
+  if (!cleanBase) {
+    return { ok: false, snapshot: null, error: 'Proxy URL is empty.' };
+  }
+  const res = await trackedFetchJson<Record<string, unknown>>(
+    'SoSoValue OpenAPI',
+    `${cleanBase}/api/soso/snapshot`,
+    undefined,
+    onLog,
+    'Live SoSoValue OpenAPI v1 via local/custom soso-proxy',
+  );
+  if (!res.ok || !res.data || !res.data.etfFlows) {
+    return {
+      ok: false,
+      snapshot: null,
+      error:
+        res.error ||
+        `Proxy at ${cleanBase} unavailable. Start locally with SOSO_API_KEY=... npm run soso:proxy, or use the verified live snapshot.`,
+    };
+  }
+  return { ok: true, snapshot: normalizeSnapshotPayload(res.data), error: null };
+}
+
 export async function probeSoSoValueOpenApi(
   apiKey: string,
   onLog?: (log: ApiProbeLog) => void,
@@ -303,17 +455,14 @@ export async function probeSoSoValueOpenApi(
   ok: boolean;
   status: number;
   error: string | null;
-  etfSummary: Record<string, unknown>[];
-  indices: Record<string, unknown>[];
-  hotNews: Record<string, unknown>[];
-  treasuries: Record<string, unknown>[];
-  etfFlowZScore: number;
+  snapshot: SoSoSnapshotPayload | null;
 }> {
+  const trimmed = apiKey.trim();
   const headers: Record<string, string> = {
-    'x-soso-api-key': apiKey.trim() || 'UNCONFIGURED_PROBE',
+    'x-soso-api-key': trimmed || 'UNCONFIGURED_PROBE',
   };
 
-  if (!apiKey.trim()) {
+  if (!trimmed) {
     const probe = await trackedFetchJson<Record<string, unknown>>(
       'SoSoValue OpenAPI',
       `${SOSO_OPENAPI_BASE}/currencies`,
@@ -326,37 +475,61 @@ export async function probeSoSoValueOpenApi(
       status: probe.status,
       error:
         probe.status === 401
-          ? 'CORS & Auth Gate verified live (HTTP 401 without key). Paste a SoSoValue x-soso-api-key to activate live ETF flows, indices, and news.'
+          ? 'CORS & Auth Gate verified live (HTTP 401 without key). Connect a local soso-proxy or paste an in-memory x-soso-api-key for live polling.'
           : probe.error || `HTTP ${probe.status}`,
-      etfSummary: [],
-      indices: [],
-      hotNews: [],
-      treasuries: [],
-      etfFlowZScore: 0,
+      snapshot: null,
     };
   }
 
-  const [etfRes, idxRes, newsRes, treasRes] = await Promise.all([
+  const [btcRes, ethRes, solRes, xrpRes, ovRes, idxListRes, newsRes, treasRes] = await Promise.all([
     trackedFetchJson<{ data?: unknown }>(
       'SoSoValue OpenAPI',
-      `${SOSO_OPENAPI_BASE}/etfs/summary-history?type=us-btc-spot`,
+      `${SOSO_OPENAPI_BASE}/etfs/summary-history?symbol=BTC&country_code=US&limit=30`,
       { headers },
       onLog,
-      'US Spot BTC ETF net-inflow history',
+      'US Spot BTC ETF net-inflow history (30d)',
+    ),
+    trackedFetchJson<{ data?: unknown }>(
+      'SoSoValue OpenAPI',
+      `${SOSO_OPENAPI_BASE}/etfs/summary-history?symbol=ETH&country_code=US&limit=30`,
+      { headers },
+      onLog,
+      'US Spot ETH ETF net-inflow history (30d)',
+    ),
+    trackedFetchJson<{ data?: unknown }>(
+      'SoSoValue OpenAPI',
+      `${SOSO_OPENAPI_BASE}/etfs/summary-history?symbol=SOL&country_code=US&limit=15`,
+      { headers },
+      onLog,
+      'US Spot SOL ETF net-inflow history (15d)',
+    ),
+    trackedFetchJson<{ data?: unknown }>(
+      'SoSoValue OpenAPI',
+      `${SOSO_OPENAPI_BASE}/etfs/summary-history?symbol=XRP&country_code=US&limit=15`,
+      { headers },
+      onLog,
+      'US Spot XRP ETF net-inflow history (15d)',
+    ),
+    trackedFetchJson<{ data?: unknown }>(
+      'SoSoValue OpenAPI',
+      `${SOSO_OPENAPI_BASE}/market/overview`,
+      { headers },
+      onLog,
+      'SoSoValue Global Crypto Market Overview',
     ),
     trackedFetchJson<{ data?: unknown }>(
       'SoSoValue OpenAPI',
       `${SOSO_OPENAPI_BASE}/indices`,
       { headers },
       onLog,
-      'SoSoValue SSI Crypto Indices',
+      'SoSoValue SSI Crypto Indices roster',
     ),
-    trackedFetchJson<{ data?: unknown }>(
+    trackedFetchJson<{ data?: { list?: unknown[] } }>(
       'SoSoValue OpenAPI',
-      `${SOSO_OPENAPI_BASE}/news/hot?pageSize=8`,
+      `${SOSO_OPENAPI_BASE}/news/hot?page=1&page_size=8`,
       { headers },
       onLog,
-      'SoSoValue Hot Market News',
+      'SoSoValue Hot Institutional News',
     ),
     trackedFetchJson<{ data?: unknown }>(
       'SoSoValue OpenAPI',
@@ -367,40 +540,67 @@ export async function probeSoSoValueOpenApi(
     ),
   ]);
 
-  const toArr = (d: unknown): Record<string, unknown>[] => {
-    if (Array.isArray(d)) return d as Record<string, unknown>[];
-    if (d && typeof d === 'object' && Array.isArray((d as { list?: unknown }).list)) {
-      return (d as { list: Record<string, unknown>[] }).list;
-    }
-    return [];
-  };
-
-  const etfSummary = toArr(etfRes.data?.data);
-  const indices = toArr(idxRes.data?.data);
-  const hotNews = toArr(newsRes.data?.data);
-  const treasuries = toArr(treasRes.data?.data);
-
-  // Derive live ETF flow z-score if history returned
-  let etfFlowZScore = 0;
-  const flows = etfSummary
-    .slice(0, 30)
-    .map((row) => safeNum(row.totalNetInflow ?? row.dailyNetInflow ?? row.netInflow, NaN))
-    .filter((v) => Number.isFinite(v));
-  if (flows.length >= 5) {
-    const mean = flows.reduce((a, b) => a + b, 0) / flows.length;
-    const std = Math.sqrt(flows.reduce((a, b) => a + (b - mean) ** 2, 0) / flows.length) || 1;
-    etfFlowZScore = Number(Math.max(-3, Math.min(3, (flows[0] - mean) / std)).toFixed(2));
+  const anyOk = btcRes.ok || ethRes.ok || idxListRes.ok || ovRes.ok;
+  if (!anyOk) {
+    return {
+      ok: false,
+      status: btcRes.status || idxListRes.status,
+      error: `SoSoValue OpenAPI returned HTTP ${btcRes.status || idxListRes.status} — verify x-soso-api-key.`,
+      snapshot: null,
+    };
   }
 
-  const anyOk = etfRes.ok || idxRes.ok || newsRes.ok || treasRes.ok;
+  const tickers = (Array.isArray(idxListRes.data?.data) ? idxListRes.data.data : [])
+    .filter((t): t is string => typeof t === 'string')
+    .slice(0, 8);
+
+  const ssiResults = await Promise.all(
+    tickers.map(async (ticker) => {
+      const snap = await trackedFetchJson<{ data?: Record<string, unknown> }>(
+        'SoSoValue OpenAPI',
+        `${SOSO_OPENAPI_BASE}/indices/${encodeURIComponent(ticker)}/market-snapshot`,
+        { headers },
+        onLog,
+        `SSI ${ticker} market snapshot`,
+      );
+      const d = snap.data?.data ?? {};
+      return {
+        ticker,
+        price: safeNum(d.price),
+        changePct24h: safeNum(d.change_pct_24h),
+        roi7d: safeNum(d.roi_7d),
+        roi1m: safeNum(d.roi_1m),
+        roi3m: safeNum(d.roi_3m),
+        roi1y: safeNum(d.roi_1y),
+        ytd: safeNum(d.ytd),
+      };
+    }),
+  );
+
+  const nowIso = new Date().toISOString();
+  const snapshot = normalizeSnapshotPayload({
+    schemaVersion: '1.3.0',
+    source: 'SoSoValue OpenAPI v1 (Live In-Memory Direct Key)',
+    fetchedAt: nowIso,
+    fetchedDateUtc: nowIso.slice(0, 10),
+    endpointsVerified: 8 + ssiResults.length,
+    marketOverview: ovRes.data?.data ?? null,
+    etfFlows: {
+      BTC: btcRes.data?.data ?? [],
+      ETH: ethRes.data?.data ?? [],
+      SOL: solRes.data?.data ?? [],
+      XRP: xrpRes.data?.data ?? [],
+    },
+    btcEtfProducts: [],
+    ssiIndices: ssiResults.filter((s) => s.price > 0),
+    hotNews: newsRes.data?.data?.list ?? [],
+    treasuries: treasRes.data?.data ?? [],
+  });
+
   return {
-    ok: anyOk,
-    status: etfRes.status || idxRes.status,
-    error: anyOk ? null : `SoSoValue API returned HTTP ${etfRes.status} — verify x-soso-api-key.`,
-    etfSummary,
-    indices,
-    hotNews,
-    treasuries,
-    etfFlowZScore,
+    ok: true,
+    status: 200,
+    error: null,
+    snapshot,
   };
 }

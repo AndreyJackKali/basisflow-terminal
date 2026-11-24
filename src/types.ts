@@ -4,7 +4,11 @@ export type AssetClass = 'Crypto' | 'Tokenized Equity' | 'Commodity';
 
 export type SignalDirection = 'CARRY SHORT' | 'CARRY LONG' | 'BASIS ARB' | 'NEUTRAL';
 
-export type DataBadgeState = 'LIVE' | 'BYOK' | 'OFFLINE' | 'LOADING';
+export type DataBadgeState = 'LIVE' | 'SNAPSHOT' | 'BYOK' | 'OFFLINE' | 'LOADING';
+
+export type SoSoConnectionMode = 'LIVE_PROXY' | 'LIVE_DIRECT' | 'VERIFIED_SNAPSHOT' | 'BYOK';
+
+export type SoSoEtfAsset = 'BTC' | 'ETH' | 'SOL' | 'XRP';
 
 export interface MarginTier {
   maxNotionalValue: string;
@@ -293,14 +297,133 @@ export interface ValueChainTelemetry {
   fetchedAt: number;
 }
 
+export interface SoSoEtfDayRow {
+  date: string;
+  totalNetInflow: number;
+  totalValueTraded: number;
+  totalNetAssets: number;
+  cumNetInflow: number;
+}
+
+export interface SoSoEtfProduct {
+  ticker: string;
+  name: string;
+  exchange: string;
+}
+
+export interface SoSoSsiConstituent {
+  symbol: string;
+  weight: number;
+}
+
+export interface SoSoSsiIndexRow {
+  ticker: string;
+  price: number;
+  changePct24h: number;
+  roi7d: number;
+  roi1m: number;
+  roi3m: number;
+  roi1y: number;
+  ytd: number;
+  constituents?: SoSoSsiConstituent[];
+}
+
+export interface SoSoMarketOverview {
+  totalMarketCap: number;
+  totalMarketCapChangePct: number;
+  totalVolume24h: number;
+  ethGasGwei: number;
+  btcGasSatVb: number;
+  asOf: number;
+}
+
+export interface SoSoNewsItem {
+  id: string;
+  title: string;
+  summary: string;
+  sourceLink: string;
+  releaseTime: number;
+}
+
+export interface SoSoTreasuryItem {
+  ticker: string;
+  name: string;
+  listLocation: string;
+}
+
+export interface SoSoSnapshotPayload {
+  schemaVersion: string;
+  source: string;
+  fetchedAt: string;
+  fetchedDateUtc: string;
+  endpointsVerified: number;
+  marketOverview: SoSoMarketOverview | null;
+  etfFlows: Record<SoSoEtfAsset, SoSoEtfDayRow[]>;
+  btcEtfProducts: SoSoEtfProduct[];
+  btcEtfFlowZScore: number;
+  ethEtfFlowZScore: number;
+  ssiIndices: SoSoSsiIndexRow[];
+  hotNews: SoSoNewsItem[];
+  treasuries: SoSoTreasuryItem[];
+}
+
+export interface EtfFlowStats {
+  latestDate: string | null;
+  latestNetInflow: number;
+  fiveDayNetInflow: number;
+  totalNetAssets: number;
+  cumNetInflow: number;
+  zScore30d: number;
+  streakDays: number;
+}
+
+export interface EtfFundingCrossCheck {
+  asset: SoSoEtfAsset;
+  perpSymbol: string;
+  hasLivePerp: boolean;
+  latestDate: string | null;
+  latestNetInflowUsd: number;
+  fiveDayNetInflowUsd: number;
+  totalNetAssetsUsd: number;
+  flowZScore: number;
+  perpFundingAprPct: number;
+  markIndexBasisBps: number;
+  spotPerpSpreadBps: number | null;
+  openInterestUsd: number;
+  regimeTag:
+    | 'DIVERGENCE: CARRY SHORT'
+    | 'ACCUMULATION: CARRY LONG'
+    | 'CROWDED SHORT SQUEEZE WATCH'
+    | 'ALIGNED BULLISH CARRY'
+    | 'ALIGNED DELEVERAGING'
+    | 'BALANCED';
+  thesis: string;
+}
+
+export interface SsiSectorFundingRow {
+  index: SoSoSsiIndexRow;
+  matchedSymbols: string[];
+  avgFundingAprPct: number | null;
+  avgBasisBps: number | null;
+}
+
 export interface SoSoValueState {
   status: DataBadgeState;
+  mode: SoSoConnectionMode;
+  sourceLabel: string;
+  proxyUrl: string;
   lastChecked: number | null;
+  snapshotFetchedAt: string | null;
+  endpointsVerified: number;
   error: string | null;
-  etfSummary: Record<string, unknown>[];
-  indices: Record<string, unknown>[];
-  hotNews: Record<string, unknown>[];
-  treasuries: Record<string, unknown>[];
+  marketOverview: SoSoMarketOverview | null;
+  etfFlows: Record<SoSoEtfAsset, SoSoEtfDayRow[]>;
+  btcEtfProducts: SoSoEtfProduct[];
+  ssiIndices: SoSoSsiIndexRow[];
+  hotNews: SoSoNewsItem[];
+  treasuries: SoSoTreasuryItem[];
+  btcEtfFlowZScore: number;
+  ethEtfFlowZScore: number;
   etfFlowZScore: number;
 }
 

@@ -27,11 +27,14 @@ import type {
   WsStreamTelemetry,
 } from './types';
 import {
+  DEFAULT_SOSO_PROXY_URL,
   NETWORK_CONFIG,
   fetchAllSodexMarkets,
+  fetchSoSoFromProxy,
   fetchSpotOrderbook,
   fetchSymbolMicrostructure,
   fetchValueChainTelemetry,
+  loadVerifiedSoSoSnapshot,
   probeSoSoValueOpenApi,
 } from './lib/api';
 import { createSodexPerpStream } from './lib/ws';
@@ -45,7 +48,6 @@ import { ApiConsoleDrawer } from './components/ApiConsoleDrawer';
 type TabKey = 'scanner' | 'microstructure' | 'execution' | 'sosovalue';
 
 const STORAGE_TRADES_KEY = 'basisflow_paper_trades_v1';
-const STORAGE_SOSO_KEY = 'basisflow_soso_api_key_v1';
 
 export default function App() {
   const [network, setNetwork] = useState<NetworkMode>('mainnet');
@@ -98,22 +100,27 @@ export default function App() {
     lastTickAt: null,
   });
 
-  // SoSoValue BYOK state
-  const [sosoKey, setSosoKey] = useState<string>(() => {
-    try {
-      return localStorage.getItem(STORAGE_SOSO_KEY) || '';
-    } catch {
-      return '';
-    }
-  });
+  // SoSoValue OpenAPI state (in-memory key only, zero localStorage persistence)
+  const [sosoKey, setSosoKey] = useState<string>('');
+  const [sosoProxyUrl, setSosoProxyUrl] = useState<string>(DEFAULT_SOSO_PROXY_URL);
+  const [loadingSoSo, setLoadingSoSo] = useState<boolean>(false);
   const [sosoState, setSosoState] = useState<SoSoValueState>({
-    status: 'BYOK',
+    status: 'LOADING',
+    mode: 'BYOK',
+    sourceLabel: 'Loading verified SoSoValue OpenAPI v1 snapshot...',
+    proxyUrl: DEFAULT_SOSO_PROXY_URL,
     lastChecked: null,
+    snapshotFetchedAt: null,
+    endpointsVerified: 0,
     error: null,
-    etfSummary: [],
-    indices: [],
+    marketOverview: null,
+    etfFlows: { BTC: [], ETH: [], SOL: [], XRP: [] },
+    btcEtfProducts: [],
+    ssiIndices: [],
     hotNews: [],
     treasuries: [],
+    btcEtfFlowZScore: 0,
+    ethEtfFlowZScore: 0,
     etfFlowZScore: 0,
   });
 
@@ -169,23 +176,122 @@ export default function App() {
     [network, pushLog],
   );
 
+  const handleLoadSoSoSnapshot = useCallback(async () => {
+    setLoadingSoSo(true);
+    const res = await loadVerifiedSoSoSnapshot(pushLog);
+    if (res.ok && res.snapshot) {
+      const snap = res.snapshot;
+      setSosoState((prev) => ({
+        ...prev,
+        status: 'SNAPSHOT',
+        mode: 'VERIFIED_SNAPSHOT',
+        sourceLabel: snap.source,
+        lastChecked: Date.now(),
+        snapshotFetchedAt: snap.fetchedAt,
+        endpointsVerified: snap.endpointsVerified,
+        error: null,
+        marketOverview: snap.marketOverview,
+        etfFlows: snap.etfFlows,
+        btcEtfProducts: snap.btcEtfProducts,
+        ssiIndices: snap.ssiIndices,
+        hotNews: snap.hotNews,
+        treasuries: snap.treasuries,
+        btcEtfFlowZScore: snap.btcEtfFlowZScore,
+        ethEtfFlowZScore: snap.ethEtfFlowZScore,
+        etfFlowZScore: snap.btcEtfFlowZScore,
+      }));
+    } else {
+      setSosoState((prev) => ({
+        ...prev,
+        status: 'BYOK',
+        mode: 'BYOK',
+        lastChecked: Date.now(),
+        error: res.error,
+      }));
+    }
+    setLoadingSoSo(false);
+  }, [pushLog]);
+
+  const handleConnectSoSoProxy = useCallback(
+    async (overrideUrl?: string) => {
+      const targetUrl = (overrideUrl !== undefined ? overrideUrl : sosoProxyUrl).trim();
+      setLoadingSoSo(true);
+      const res = await fetchSoSoFromProxy(targetUrl, pushLog);
+      if (res.ok && res.snapshot) {
+        const snap = res.snapshot;
+        setSosoState((prev) => ({
+          ...prev,
+          status: 'LIVE',
+          mode: 'LIVE_PROXY',
+          sourceLabel: `${snap.source} (${targetUrl})`,
+          proxyUrl: targetUrl,
+          lastChecked: Date.now(),
+          snapshotFetchedAt: snap.fetchedAt,
+          endpointsVerified: snap.endpointsVerified,
+          error: null,
+          marketOverview: snap.marketOverview,
+          etfFlows: snap.etfFlows,
+          btcEtfProducts: snap.btcEtfProducts,
+          ssiIndices: snap.ssiIndices,
+          hotNews: snap.hotNews,
+          treasuries: snap.treasuries,
+          btcEtfFlowZScore: snap.btcEtfFlowZScore,
+          ethEtfFlowZScore: snap.ethEtfFlowZScore,
+          etfFlowZScore: snap.btcEtfFlowZScore,
+        }));
+      } else {
+        setSosoState((prev) => ({
+          ...prev,
+          lastChecked: Date.now(),
+          error: `${res.error ?? 'Proxy connection failed'} — keeping verified live snapshot active.`,
+        }));
+      }
+      setLoadingSoSo(false);
+    },
+    [sosoProxyUrl, pushLog],
+  );
+
   const handleProbeSoSo = useCallback(
     async (overrideKey?: string) => {
       const activeKey = overrideKey !== undefined ? overrideKey : sosoKey;
+      setLoadingSoSo(true);
       const res = await probeSoSoValueOpenApi(activeKey, pushLog);
-      setSosoState({
-        status: res.ok ? 'LIVE' : 'BYOK',
-        lastChecked: Date.now(),
-        error: res.error,
-        etfSummary: res.etfSummary,
-        indices: res.indices,
-        hotNews: res.hotNews,
-        treasuries: res.treasuries,
-        etfFlowZScore: res.etfFlowZScore,
-      });
+      if (res.ok && res.snapshot) {
+        const snap = res.snapshot;
+        setSosoState((prev) => ({
+          ...prev,
+          status: 'LIVE',
+          mode: 'LIVE_DIRECT',
+          sourceLabel: snap.source,
+          lastChecked: Date.now(),
+          snapshotFetchedAt: snap.fetchedAt,
+          endpointsVerified: snap.endpointsVerified,
+          error: null,
+          marketOverview: snap.marketOverview,
+          etfFlows: snap.etfFlows,
+          btcEtfProducts: snap.btcEtfProducts,
+          ssiIndices: snap.ssiIndices,
+          hotNews: snap.hotNews,
+          treasuries: snap.treasuries,
+          btcEtfFlowZScore: snap.btcEtfFlowZScore,
+          ethEtfFlowZScore: snap.ethEtfFlowZScore,
+          etfFlowZScore: snap.btcEtfFlowZScore,
+        }));
+      } else {
+        setSosoState((prev) => ({
+          ...prev,
+          lastChecked: Date.now(),
+          error: res.error,
+        }));
+      }
+      setLoadingSoSo(false);
     },
     [sosoKey, pushLog],
   );
+
+  useEffect(() => {
+    handleLoadSoSoSnapshot();
+  }, [handleLoadSoSoSnapshot]);
 
   useEffect(() => {
     loadGlobalData();
@@ -313,11 +419,13 @@ export default function App() {
   const badgeClass = (st: DataBadgeState) =>
     st === 'LIVE'
       ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40'
-      : st === 'BYOK'
-        ? 'bg-amber-500/15 text-amber-300 border-amber-500/40'
-        : st === 'LOADING'
-          ? 'bg-slate-800 text-slate-400 border-slate-700'
-          : 'bg-rose-500/20 text-rose-300 border-rose-500/40';
+      : st === 'SNAPSHOT'
+        ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/40'
+        : st === 'BYOK'
+          ? 'bg-amber-500/15 text-amber-300 border-amber-500/40'
+          : st === 'LOADING'
+            ? 'bg-slate-800 text-slate-400 border-slate-700'
+            : 'bg-rose-500/20 text-rose-300 border-rose-500/40';
 
   return (
     <div className="min-h-screen flex flex-col bg-[#090d14] text-slate-100">
@@ -432,7 +540,7 @@ export default function App() {
               ['scanner', '1. Basis & Carry Scanner', Activity],
               ['microstructure', '2. L2 Microstructure & Regime', BarChart3],
               ['execution', '3. Risk-Gated Execution Desk', ShieldCheck],
-              ['sosovalue', '4. SoSoValue OpenAPI Hub', KeyRound],
+              ['sosovalue', '4. ETF & SSI Intelligence (SoSoValue)', KeyRound],
             ] as const
           ).map(([key, label, Icon]) => (
             <button
@@ -529,17 +637,19 @@ export default function App() {
         {activeTab === 'sosovalue' && (
           <SoSoValueTab
             apiKey={sosoKey}
-            onSaveApiKey={(k) => {
-              setSosoKey(k);
-              try {
-                if (k) localStorage.setItem(STORAGE_SOSO_KEY, k);
-                else localStorage.removeItem(STORAGE_SOSO_KEY);
-              } catch {
-                // ignore
-              }
-            }}
+            onChangeApiKey={setSosoKey}
+            proxyUrl={sosoProxyUrl}
+            onChangeProxyUrl={setSosoProxyUrl}
             sosoState={sosoState}
-            onProbeLive={handleProbeSoSo}
+            markets={markets}
+            loading={loadingSoSo}
+            onConnectProxy={handleConnectSoSoProxy}
+            onProbeLiveKey={handleProbeSoSo}
+            onReloadSnapshot={handleLoadSoSoSnapshot}
+            onSelectMarketForExecution={(sym) => {
+              setSelectedSymbol(sym);
+              setActiveTab('execution');
+            }}
           />
         )}
       </main>

@@ -4,6 +4,8 @@ import type {
   DeltaNeutralHedgeInput,
   DeltaNeutralHedgeResult,
   EnrichedMarket,
+  EtfFlowStats,
+  EtfFundingCrossCheck,
   KlineBar,
   MonteCarloInput,
   MonteCarloStepBand,
@@ -19,8 +21,12 @@ import type {
   RiskGateCheck,
   SignalDirection,
   SlippageResult,
+  SoSoEtfAsset,
+  SoSoEtfDayRow,
+  SoSoSsiIndexRow,
   SpotSymbolInfo,
   SpotTicker,
+  SsiSectorFundingRow,
   TailStressScenario,
 } from '../types';
 
@@ -1155,4 +1161,169 @@ export function serializeMarketsToCsv(markets: EnrichedMarket[]): string {
       .join(','),
   );
   return [headers.join(','), ...rows].join('\n');
+}
+
+/**
+ * Computes institutional US Spot ETF flow summary metrics and 30-session z-score.
+ */
+export function computeEtfFlowStats(rows: SoSoEtfDayRow[]): EtfFlowStats {
+  if (!rows || rows.length === 0) {
+    return {
+      latestDate: null,
+      latestNetInflow: 0,
+      fiveDayNetInflow: 0,
+      totalNetAssets: 0,
+      cumNetInflow: 0,
+      zScore30d: 0,
+      streakDays: 0,
+    };
+  }
+  const latest = rows[0];
+  const fiveDayNetInflow = rows
+    .slice(0, 5)
+    .reduce((acc, r) => acc + safeNum(r.totalNetInflow), 0);
+
+  const flows = rows
+    .slice(0, 30)
+    .map((r) => safeNum(r.totalNetInflow, NaN))
+    .filter((v) => Number.isFinite(v));
+
+  let zScore30d = 0;
+  if (flows.length >= 5) {
+    const { mean, std } = meanStd(flows);
+    zScore30d = Number(Math.max(-3, Math.min(3, (flows[0] - mean) / std)).toFixed(2));
+  }
+
+  let streakDays = 0;
+  const firstSign = Math.sign(latest.totalNetInflow);
+  if (firstSign !== 0) {
+    for (const r of rows) {
+      if (Math.sign(r.totalNetInflow) === firstSign) streakDays += firstSign;
+      else break;
+    }
+  }
+
+  return {
+    latestDate: latest.date || null,
+    latestNetInflow: safeNum(latest.totalNetInflow),
+    fiveDayNetInflow,
+    totalNetAssets: safeNum(latest.totalNetAssets),
+    cumNetInflow: safeNum(latest.cumNetInflow),
+    zScore30d,
+    streakDays,
+  };
+}
+
+/**
+ * Cross-checks live SoSoValue US Spot ETF institutional flows against live SoDEX Perp
+ * Funding APR, Mark-Index Basis, and Spot-vs-Perp Spread.
+ */
+export function buildEtfFundingCrossChecks(
+  etfFlows: Record<SoSoEtfAsset, SoSoEtfDayRow[]>,
+  markets: EnrichedMarket[],
+): EtfFundingCrossCheck[] {
+  const assets: SoSoEtfAsset[] = ['BTC', 'ETH', 'SOL', 'XRP'];
+  const byBase = new Map(markets.map((m) => [m.baseCoin.toUpperCase(), m]));
+
+  return assets.map((asset) => {
+    const rows = etfFlows[asset] ?? [];
+    const stats = computeEtfFlowStats(rows);
+    const mkt = byBase.get(asset);
+    const perpFundingAprPct = mkt?.annualizedFundingApr ?? 0;
+    const markIndexBasisBps = mkt?.markIndexBasisBps ?? 0;
+    const spotPerpSpreadBps = mkt?.spotPerpSpreadBps ?? null;
+    const openInterestUsd = mkt?.openInterestUsd ?? 0;
+
+    const netFlowSignal = stats.fiveDayNetInflow;
+    let regimeTag: EtfFundingCrossCheck['regimeTag'] = 'BALANCED';
+    let thesis = 'ETF flows and SoDEX perp funding are balanced near parity.';
+
+    if (netFlowSignal < 0 && perpFundingAprPct >= 6) {
+      regimeTag = 'DIVERGENCE: CARRY SHORT';
+      thesis = `Institutional ETF outflows ($${(netFlowSignal / 1e6).toFixed(1)}M 5d) diverge from positive SoDEX perp funding (+${perpFundingAprPct.toFixed(1)}% APR) — prime short-perp / cash-and-carry edge.`;
+    } else if (netFlowSignal > 0 && perpFundingAprPct <= -4) {
+      regimeTag = 'ACCUMULATION: CARRY LONG';
+      thesis = `Spot ETF inflows (+$${(netFlowSignal / 1e6).toFixed(1)}M 5d) while SoDEX shorts pay ${Math.abs(perpFundingAprPct).toFixed(1)}% APR — institutional accumulation with positive long carry.`;
+    } else if (netFlowSignal < 0 && perpFundingAprPct <= -6) {
+      regimeTag = 'CROWDED SHORT SQUEEZE WATCH';
+      thesis = `Heavy ETF outflows ($${(netFlowSignal / 1e6).toFixed(1)}M 5d) paired with negative perp funding (${perpFundingAprPct.toFixed(1)}% APR) — crowded short positioning; watch basis snapback.`;
+    } else if (netFlowSignal > 0 && perpFundingAprPct > 4) {
+      regimeTag = 'ALIGNED BULLISH CARRY';
+      thesis = `Positive ETF inflows (+$${(netFlowSignal / 1e6).toFixed(1)}M 5d) confirm bullish perp carry (+${perpFundingAprPct.toFixed(1)}% APR); favorable for delta-neutral basis capture.`;
+    } else if (netFlowSignal < 0) {
+      regimeTag = 'ALIGNED DELEVERAGING';
+      thesis = `Institutional ETF outflows ($${(netFlowSignal / 1e6).toFixed(1)}M 5d) alongside muted perp funding (${perpFundingAprPct.toFixed(1)}% APR) indicate disciplined risk-off deleveraging.`;
+    }
+
+    return {
+      asset,
+      perpSymbol: mkt?.symbol ?? `${asset}-USD`,
+      hasLivePerp: Boolean(mkt),
+      latestDate: stats.latestDate,
+      latestNetInflowUsd: stats.latestNetInflow,
+      fiveDayNetInflowUsd: stats.fiveDayNetInflow,
+      totalNetAssetsUsd: stats.totalNetAssets,
+      flowZScore: stats.zScore30d,
+      perpFundingAprPct,
+      markIndexBasisBps,
+      spotPerpSpreadBps,
+      openInterestUsd,
+      regimeTag,
+      thesis,
+    };
+  });
+}
+
+const SSI_SECTOR_BASKETS: Record<string, string[]> = {
+  ssiMAG7: ['BTC', 'ETH', 'SOL', 'XRP', 'BNB', 'DOGE', 'ADA'],
+  ssiLayer1: ['BTC', 'ETH', 'SOL', 'AVAX', 'SUI', 'APT', 'NEAR', 'TON', 'SEI', 'ADA'],
+  ssiDeFi: ['UNI', 'AAVE', 'LINK', 'PENDLE', 'ENA', 'CRV', 'LDO', 'MKR', 'SNX', 'JUP', 'HYPE'],
+  ssiAI: ['TAO', 'FET', 'RENDER', 'WLD', 'VIRTUAL', 'NEAR', 'ICP', 'AKT', 'AR'],
+  ssiRWA: ['ONDO', 'LINK', 'OM', 'AVAX', 'MKR', 'XAUT'],
+  ssiMeme: ['DOGE', 'PEPE', 'WIF', 'BONK', 'SHIB', 'FLOKI', 'PENGU', 'FARTCOIN', 'TRUMP', 'PUMP'],
+  ssiLayer2: ['ARB', 'OP', 'STRK', 'POL', 'IMX', 'MNT', 'ZK'],
+  ssiCeFi: ['BNB', 'OKB', 'BGB', 'CRO', 'LEO'],
+  ssiDePIN: ['FIL', 'RENDER', 'AR', 'HNT', 'AKT', 'TAO'],
+  ssiPayFi: ['XRP', 'XLM', 'LTC', 'BCH', 'SOL'],
+  ssiGameFi: ['IMX', 'GALA', 'AXS', 'SAND', 'MANA', 'BEAM'],
+  ssiSocialFi: ['TON', 'CHZ', 'MASK'],
+  ssiNFT: ['PENGU', 'APE', 'BLUR', 'IMX'],
+};
+
+/**
+ * Joins SoSoValue SSI Crypto Sector Indices with live SoDEX Perp funding & basis averages.
+ */
+export function computeSsiSectorFunding(
+  ssiIndices: SoSoSsiIndexRow[],
+  markets: EnrichedMarket[],
+): SsiSectorFundingRow[] {
+  const byBase = new Map(markets.map((m) => [m.baseCoin.toUpperCase(), m]));
+  return ssiIndices.map((index) => {
+    const basket = SSI_SECTOR_BASKETS[index.ticker] ?? [];
+    const matched = basket
+      .map((coin) => byBase.get(coin))
+      .filter((m): m is EnrichedMarket => Boolean(m));
+
+    const avgFundingAprPct =
+      matched.length > 0
+        ? Number(
+            (
+              matched.reduce((acc, m) => acc + m.annualizedFundingApr, 0) / matched.length
+            ).toFixed(2),
+          )
+        : null;
+    const avgBasisBps =
+      matched.length > 0
+        ? Number(
+            (matched.reduce((acc, m) => acc + m.markIndexBasisBps, 0) / matched.length).toFixed(1),
+          )
+        : null;
+
+    return {
+      index,
+      matchedSymbols: matched.map((m) => m.symbol),
+      avgFundingAprPct,
+      avgBasisBps,
+    };
+  });
 }

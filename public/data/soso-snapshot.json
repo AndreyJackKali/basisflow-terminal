@@ -1,0 +1,925 @@
+{
+  "schemaVersion": "1.3.0",
+  "source": "SoSoValue OpenAPI v1 (Live Verified Snapshot)",
+  "fetchedAt": "2026-11-24T04:05:51.993Z",
+  "fetchedDateUtc": "2026-11-24",
+  "endpointsVerified": 24,
+  "marketOverview": {
+    "totalMarketCap": 2069932572839.2532,
+    "totalMarketCapChangePct": -1.03584436,
+    "totalVolume24h": 100913055480.45,
+    "ethGasGwei": 0.10287136,
+    "btcGasSatVb": 0.14,
+    "asOf": 1795493149704
+  },
+  "etfFlows": {
+    "BTC": [
+      {
+        "date": "2026-11-20",
+        "totalNetInflow": -669162059.12,
+        "totalValueTraded": 4703133644.5,
+        "totalNetAssets": 71345056310.82204,
+        "cumNetInflow": 52843375187.408
+      },
+      {
+        "date": "2026-11-19",
+        "totalNetInflow": -582193660.705,
+        "totalValueTraded": 3235223266,
+        "totalNetAssets": 76549156272.32428,
+        "cumNetInflow": 53512537246.528
+      },
+      {
+        "date": "2026-11-18",
+        "totalNetInflow": -306421294.3350003,
+        "totalValueTraded": 2562627854.6,
+        "totalNetAssets": 77706592903.46516,
+        "cumNetInflow": 54094730907.232994
+      },
+      {
+        "date": "2026-11-17",
+        "totalNetInflow": -239944866.82,
+        "totalValueTraded": 2352304584.3,
+        "totalNetAssets": 79649640510.39108,
+        "cumNetInflow": 54401152201.568
+      },
+      {
+        "date": "2026-11-16",
+        "totalNetInflow": 7986219.699999999,
+        "totalValueTraded": 2853679712,
+        "totalNetAssets": 84315771501.6814,
+        "cumNetInflow": 54641097068.388
+      },
+      {
+        "date": "2026-11-13",
+        "totalNetInflow": -185450233.4,
+        "totalValueTraded": 2588280169.4,
+        "totalNetAssets": 86199738908.25476,
+        "cumNetInflow": 54633110848.687996
+      },
+      {
+        "date": "2026-11-12",
+        "totalNetInflow": -283997508,
+        "totalValueTraded": 2885345830.3,
+        "totalNetAssets": 89556010553.95004,
+        "cumNetInflow": 54818561082.088
+      },
+      {
+        "date": "2026-11-11",
+        "totalNetInflow": -299898422.14,
+        "totalValueTraded": 2269834567.708,
+        "totalNetAssets": 93696850737.42168,
+        "cumNetInflow": 55102558590.088
+      },
+      {
+        "date": "2026-11-10",
+        "totalNetInflow": -95001233.75,
+        "totalValueTraded": 2062983908.6,
+        "totalNetAssets": 92823526744.15384,
+        "cumNetInflow": 55402457012.228
+      },
+      {
+        "date": "2026-11-09",
+        "totalNetInflow": -201081930.01,
+        "totalValueTraded": 1726290132.4,
+        "totalNetAssets": 94434986267.61964,
+        "cumNetInflow": 55497458245.978
+      },
+      {
+        "date": "2026-11-06",
+        "totalNetInflow": -411917545.09999996,
+        "totalValueTraded": 2333150247.3,
+        "totalNetAssets": 95896862408.52428,
+        "cumNetInflow": 55698540175.988
+      },
+      {
+        "date": "2026-11-05",
+        "totalNetInflow": -430203000.85,
+        "totalValueTraded": 3885147006,
+        "totalNetAssets": 96647198354.14713,
+        "cumNetInflow": 56110457721.088
+      },
+      {
+        "date": "2026-11-04",
+        "totalNetInflow": 74567738.35000001,
+        "totalValueTraded": 3594956562,
+        "totalNetAssets": 102255112366.22893,
+        "cumNetInflow": 56540660721.937996
+      },
+      {
+        "date": "2026-11-03",
+        "totalNetInflow": -115563333.61999999,
+        "totalValueTraded": 1460343755.8,
+        "totalNetAssets": 99157322791.52667,
+        "cumNetInflow": 56466092983.588
+      },
+      {
+        "date": "2026-11-02",
+        "totalNetInflow": -398617353.4,
+        "totalValueTraded": 1991815926.5,
+        "totalNetAssets": 98124458163.02667,
+        "cumNetInflow": 56581656317.208
+      },
+      {
+        "date": "2026-10-30",
+        "totalNetInflow": -643330345.885,
+        "totalValueTraded": 6350689995,
+        "totalNetAssets": 98139977651.38004,
+        "cumNetInflow": 56980273670.608
+      },
+      {
+        "date": "2026-10-29",
+        "totalNetInflow": 17071922.455000002,
+        "totalValueTraded": 2108990154.7,
+        "totalNetAssets": 104268166683.82224,
+        "cumNetInflow": 57623604016.493
+      },
+      {
+        "date": "2026-10-28",
+        "totalNetInflow": 137330298.95,
+        "totalValueTraded": 1261862561.5,
+        "totalNetAssets": 104876683004.63847,
+        "cumNetInflow": 57606532094.037994
+      },
+      {
+        "date": "2026-10-27",
+        "totalNetInflow": 175993377,
+        "totalValueTraded": 1575156229.7,
+        "totalNetAssets": 103943311408.8796,
+        "cumNetInflow": 57469201795.088
+      },
+      {
+        "date": "2026-10-26",
+        "totalNetInflow": 110344120,
+        "totalValueTraded": 1863077616.9,
+        "totalNetAssets": 102839745964.24516,
+        "cumNetInflow": 57293208418.088
+      }
+    ],
+    "ETH": [
+      {
+        "date": "2026-11-20",
+        "totalNetInflow": -97375294.08,
+        "totalValueTraded": 804318379.4,
+        "totalNetAssets": 8630796561.27724,
+        "cumNetInflow": 11209407262.05585
+      },
+      {
+        "date": "2026-11-19",
+        "totalNetInflow": -131244424.12,
+        "totalValueTraded": 624596934.4,
+        "totalNetAssets": 9598705421.54204,
+        "cumNetInflow": 11306782556.135849
+      },
+      {
+        "date": "2026-11-18",
+        "totalNetInflow": -39833264.72,
+        "totalValueTraded": 522800825.5,
+        "totalNetAssets": 9679068236.851841,
+        "cumNetInflow": 11438026980.25585
+      },
+      {
+        "date": "2026-11-17",
+        "totalNetInflow": -29090294.84,
+        "totalValueTraded": 559611292.5,
+        "totalNetAssets": 9967896757.71744,
+        "cumNetInflow": 11477860244.97585
+      },
+      {
+        "date": "2026-11-16",
+        "totalNetInflow": -8312467.225,
+        "totalValueTraded": 527763315.4,
+        "totalNetAssets": 10541541225.178,
+        "cumNetInflow": 11515263007.04085
+      },
+      {
+        "date": "2026-11-16",
+        "totalNetInflow": -8312467.225,
+        "totalValueTraded": 527763315.4,
+        "totalNetAssets": 10541541225.178,
+        "cumNetInflow": 11515263007.04085
+      },
+      {
+        "date": "2026-11-13",
+        "totalNetInflow": 2357023.399999999,
+        "totalValueTraded": 464965138.1,
+        "totalNetAssets": 10854106972.43436,
+        "cumNetInflow": 11523575474.26585
+      },
+      {
+        "date": "2026-11-12",
+        "totalNetInflow": -70573489.2,
+        "totalValueTraded": 551646959.8,
+        "totalNetAssets": 11226380297.19084,
+        "cumNetInflow": 11521218450.86585
+      },
+      {
+        "date": "2026-11-11",
+        "totalNetInflow": -144810903.91,
+        "totalValueTraded": 458654230.059,
+        "totalNetAssets": 11654224889.274681,
+        "cumNetInflow": 11591791940.06585
+      },
+      {
+        "date": "2026-11-10",
+        "totalNetInflow": -1316848.4000000001,
+        "totalValueTraded": 712555320.9,
+        "totalNetAssets": 11642627970.68992,
+        "cumNetInflow": 11736602843.97585
+      },
+      {
+        "date": "2026-11-09",
+        "totalNetInflow": -184506572.0399993,
+        "totalValueTraded": 651108086.2,
+        "totalNetAssets": 12070125040.12424,
+        "cumNetInflow": 11737919692.375849
+      },
+      {
+        "date": "2026-11-06",
+        "totalNetInflow": -93188728.41500075,
+        "totalValueTraded": 728848411.33,
+        "totalNetAssets": 12841312121.297037,
+        "cumNetInflow": 11922426264.41585
+      },
+      {
+        "date": "2026-11-05",
+        "totalNetInflow": -99967666.13999926,
+        "totalValueTraded": 1133383411.8,
+        "totalNetAssets": 13039421286.653599,
+        "cumNetInflow": 12015614992.83085
+      },
+      {
+        "date": "2026-11-04",
+        "totalNetInflow": 53019958.44999918,
+        "totalValueTraded": 947590174,
+        "totalNetAssets": 14123822188.73708,
+        "cumNetInflow": 12115582658.970848
+      },
+      {
+        "date": "2026-11-03",
+        "totalNetInflow": -85346188.64,
+        "totalValueTraded": 352932128.99,
+        "totalNetAssets": 13320643490.536678,
+        "cumNetInflow": 12062562700.52085
+      },
+      {
+        "date": "2026-11-02",
+        "totalNetInflow": -139795369.81000012,
+        "totalValueTraded": 577785488.1,
+        "totalNetAssets": 13182615518.73308,
+        "cumNetInflow": 12147908889.16085
+      },
+      {
+        "date": "2026-10-30",
+        "totalNetInflow": -155847133.1,
+        "totalValueTraded": 847957674.9,
+        "totalNetAssets": 13223622940.533838,
+        "cumNetInflow": 12287704258.97085
+      },
+      {
+        "date": "2026-10-29",
+        "totalNetInflow": -105480897.65999988,
+        "totalValueTraded": 711579717.6,
+        "totalNetAssets": 13983520088.55604,
+        "cumNetInflow": 12443551392.07085
+      },
+      {
+        "date": "2026-10-28",
+        "totalNetInflow": -21411413.040000007,
+        "totalValueTraded": 480717198.8,
+        "totalNetAssets": 14272769497.65628,
+        "cumNetInflow": 12549032289.73085
+      },
+      {
+        "date": "2026-10-27",
+        "totalNetInflow": -60217804.824999996,
+        "totalValueTraded": 392325416.5,
+        "totalNetAssets": 14184192243.5958,
+        "cumNetInflow": 12570443702.77085
+      },
+      {
+        "date": "2026-10-26",
+        "totalNetInflow": -88576872,
+        "totalValueTraded": 506234687.4,
+        "totalNetAssets": 14066650049.23684,
+        "cumNetInflow": 12630661507.59585
+      }
+    ],
+    "SOL": [
+      {
+        "date": "2026-11-23",
+        "totalNetInflow": -3828019,
+        "totalValueTraded": 65395471.85,
+        "totalNetAssets": 1034748740.716,
+        "cumNetInflow": 1410914450.6890001
+      },
+      {
+        "date": "2026-11-20",
+        "totalNetInflow": -5904203.2,
+        "totalValueTraded": 70556252.11,
+        "totalNetAssets": 965429801.046,
+        "cumNetInflow": 1414742469.6890001
+      },
+      {
+        "date": "2026-11-19",
+        "totalNetInflow": -1398736.96,
+        "totalValueTraded": 35721906.67,
+        "totalNetAssets": 1046740520.13,
+        "cumNetInflow": 1420646672.889
+      },
+      {
+        "date": "2026-11-18",
+        "totalNetInflow": 0,
+        "totalValueTraded": 30152671.25,
+        "totalNetAssets": 1046685761.7329999,
+        "cumNetInflow": 1422045409.849
+      },
+      {
+        "date": "2026-11-17",
+        "totalNetInflow": 0,
+        "totalValueTraded": 53895063.26,
+        "totalNetAssets": 1046659157.3959999,
+        "cumNetInflow": 1422045409.849
+      },
+      {
+        "date": "2026-11-16",
+        "totalNetInflow": 11684009.83,
+        "totalValueTraded": 56983546.19,
+        "totalNetAssets": 1025140177.506,
+        "cumNetInflow": 1422045409.849
+      },
+      {
+        "date": "2026-11-13",
+        "totalNetInflow": -3086770.7,
+        "totalValueTraded": 42229451.66,
+        "totalNetAssets": 1136654624.932,
+        "cumNetInflow": 1410361400.019
+      },
+      {
+        "date": "2026-11-12",
+        "totalNetInflow": -1923809.475,
+        "totalValueTraded": 48898583.07,
+        "totalNetAssets": 1157073885.971,
+        "cumNetInflow": 1413448170.719
+      },
+      {
+        "date": "2026-11-11",
+        "totalNetInflow": -5845693.29,
+        "totalValueTraded": 28813042.708,
+        "totalNetAssets": 1208663952.413,
+        "cumNetInflow": 1415371980.194
+      },
+      {
+        "date": "2026-11-10",
+        "totalNetInflow": -10563555.58,
+        "totalValueTraded": 52352660.07,
+        "totalNetAssets": 1189718328.58,
+        "cumNetInflow": 1431851651.889
+      },
+      {
+        "date": "2026-11-09",
+        "totalNetInflow": -10633978.405,
+        "totalValueTraded": 54299233.85,
+        "totalNetAssets": 1249693429.722,
+        "cumNetInflow": 1431781229.0640001
+      },
+      {
+        "date": "2026-11-06",
+        "totalNetInflow": -25075981.63,
+        "totalValueTraded": 28045845.21,
+        "totalNetAssets": 1308331657.987,
+        "cumNetInflow": 1442415207.469
+      },
+      {
+        "date": "2026-11-05",
+        "totalNetInflow": -1176077.2,
+        "totalValueTraded": 57287532.62,
+        "totalNetAssets": 1332537763.2319999,
+        "cumNetInflow": 1467491189.099
+      },
+      {
+        "date": "2026-11-04",
+        "totalNetInflow": 0,
+        "totalValueTraded": 40130091.16,
+        "totalNetAssets": 1404963826.1039999,
+        "cumNetInflow": 1468667266.299
+      },
+      {
+        "date": "2026-11-03",
+        "totalNetInflow": 0,
+        "totalValueTraded": 26536540.05,
+        "totalNetAssets": 1384620883.826,
+        "cumNetInflow": 1468667266.299
+      }
+    ],
+    "XRP": [
+      {
+        "date": "2026-11-23",
+        "totalNetInflow": -2489950,
+        "totalValueTraded": 32704063.04,
+        "totalNetAssets": 1041800991.21,
+        "cumNetInflow": 1775506454.94
+      },
+      {
+        "date": "2026-11-20",
+        "totalNetInflow": -4968636,
+        "totalValueTraded": 35182778.98,
+        "totalNetAssets": 989614841.3,
+        "cumNetInflow": 1777996404.94
+      },
+      {
+        "date": "2026-11-19",
+        "totalNetInflow": 0,
+        "totalValueTraded": 17783605.11,
+        "totalNetAssets": 1075081219.25,
+        "cumNetInflow": 1782965040.94
+      },
+      {
+        "date": "2026-11-18",
+        "totalNetInflow": 0,
+        "totalValueTraded": 16391293.22,
+        "totalNetAssets": 1078684996.41,
+        "cumNetInflow": 1782965040.94
+      },
+      {
+        "date": "2026-11-17",
+        "totalNetInflow": -6137326,
+        "totalValueTraded": 22160933.66,
+        "totalNetAssets": 1078696365.73,
+        "cumNetInflow": 1782965040.94
+      },
+      {
+        "date": "2026-11-16",
+        "totalNetInflow": 0,
+        "totalValueTraded": 38135386.3,
+        "totalNetAssets": 1075069642.22,
+        "cumNetInflow": 1789102366.94
+      },
+      {
+        "date": "2026-11-13",
+        "totalNetInflow": -1089424.4,
+        "totalValueTraded": 22001516.26,
+        "totalNetAssets": 1151654914.55,
+        "cumNetInflow": 1789102366.94
+      },
+      {
+        "date": "2026-11-12",
+        "totalNetInflow": 0,
+        "totalValueTraded": 33656433.03,
+        "totalNetAssets": 1162297793.92,
+        "cumNetInflow": 1790191791.34
+      },
+      {
+        "date": "2026-11-11",
+        "totalNetInflow": 0,
+        "totalValueTraded": 26582044.854,
+        "totalNetAssets": 1193490285.33,
+        "cumNetInflow": 1790191791.34
+      },
+      {
+        "date": "2026-11-10",
+        "totalNetInflow": -7616391,
+        "totalValueTraded": 37543914.92,
+        "totalNetAssets": 1192912262.33,
+        "cumNetInflow": 1790191791.34
+      },
+      {
+        "date": "2026-11-09",
+        "totalNetInflow": -10421570.31,
+        "totalValueTraded": 29339441,
+        "totalNetAssets": 1237784383.92,
+        "cumNetInflow": 1797808182.34
+      },
+      {
+        "date": "2026-11-06",
+        "totalNetInflow": 0,
+        "totalValueTraded": 22048300.88,
+        "totalNetAssets": 1342955151.2,
+        "cumNetInflow": 1808229752.65
+      },
+      {
+        "date": "2026-11-05",
+        "totalNetInflow": 0,
+        "totalValueTraded": 22300189.11,
+        "totalNetAssets": 1413226369.07,
+        "cumNetInflow": 1808229752.65
+      },
+      {
+        "date": "2026-11-04",
+        "totalNetInflow": 0,
+        "totalValueTraded": 23098555.95,
+        "totalNetAssets": 1485734067.39,
+        "cumNetInflow": 1808229752.65
+      },
+      {
+        "date": "2026-11-03",
+        "totalNetInflow": 0,
+        "totalValueTraded": 14045176.9,
+        "totalNetAssets": 1456327568.1,
+        "cumNetInflow": 1808229752.65
+      }
+    ]
+  },
+  "btcEtfProducts": [
+    {
+      "ticker": "IBIT",
+      "name": "iShares Bitcoin Trust",
+      "exchange": "NASDAQ"
+    },
+    {
+      "ticker": "FBTC",
+      "name": "Fidelity Wise Origin Bitcoin Fund",
+      "exchange": "CBOE"
+    },
+    {
+      "ticker": "ARKB",
+      "name": "ARK 21Shares Bitcoin ETF",
+      "exchange": "CBOE"
+    },
+    {
+      "ticker": "BTCO",
+      "name": "Invesco Galaxy Bitcoin ETF",
+      "exchange": "CBOE"
+    },
+    {
+      "ticker": "BTCW",
+      "name": "WisdomTree Bitcoin Trust",
+      "exchange": "CBOE"
+    },
+    {
+      "ticker": "BRRR",
+      "name": "Valkyrie Bitcoin Fund",
+      "exchange": "NASDAQ"
+    },
+    {
+      "ticker": "BITB",
+      "name": "Bitwise Bitcoin ETF",
+      "exchange": "NYSE"
+    },
+    {
+      "ticker": "EZBC",
+      "name": "Franklin Templeton Digital Holdings Trust",
+      "exchange": "CBOE"
+    },
+    {
+      "ticker": "HODL",
+      "name": "VanEck Bitcoin ETF",
+      "exchange": "CBOE"
+    },
+    {
+      "ticker": "GBTC",
+      "name": "Grayscale Bitcoin Trust",
+      "exchange": "NYSE"
+    },
+    {
+      "ticker": "BTC",
+      "name": "Grayscale Bitcoin Mini Trust",
+      "exchange": "NYSE"
+    },
+    {
+      "ticker": "MSBT",
+      "name": "Morgan Stanley Bitcoin Trust",
+      "exchange": "NYSE"
+    }
+  ],
+  "btcEtfFlowZScore": -1.8,
+  "ethEtfFlowZScore": -0.42,
+  "ssiIndices": [
+    {
+      "ticker": "ssiDeFi",
+      "price": 6.079186620165,
+      "changePct24h": 0.0102,
+      "roi7d": -0.1538,
+      "roi1m": -0.2694,
+      "roi3m": -0.1244,
+      "roi1y": -0.0798,
+      "ytd": 0.1654,
+      "constituents": [
+        {
+          "symbol": "pancakeswap",
+          "weight": 0.0143
+        },
+        {
+          "symbol": "aave",
+          "weight": 0.0508
+        },
+        {
+          "symbol": "uniswap",
+          "weight": 0.0693
+        },
+        {
+          "symbol": "chainlink",
+          "weight": 0.2199
+        },
+        {
+          "symbol": "jupiter",
+          "weight": 0.0183
+        },
+        {
+          "symbol": "ethena",
+          "weight": 0.0366
+        },
+        {
+          "symbol": "morpho-token",
+          "weight": 0.0427
+        },
+        {
+          "symbol": "hyperliquid",
+          "weight": 0.4613
+        },
+        {
+          "symbol": "ondo-finance",
+          "weight": 0.0461
+        },
+        {
+          "symbol": "SKY",
+          "weight": 0.0407
+        }
+      ]
+    },
+    {
+      "ticker": "ssiAI",
+      "price": 3.476559863594,
+      "changePct24h": -0.0259,
+      "roi7d": -0.0177,
+      "roi1m": -0.2253,
+      "roi3m": -0.0152,
+      "roi1y": -0.4806,
+      "ytd": -0.2321
+    },
+    {
+      "ticker": "ssiRWA",
+      "price": 3.528310223636,
+      "changePct24h": -0.0082,
+      "roi7d": -0.2493,
+      "roi1m": -0.3921,
+      "roi3m": -0.2733,
+      "roi1y": -0.428,
+      "ytd": -0.2921
+    },
+    {
+      "ticker": "ssiCeFi",
+      "price": 17.339710413356,
+      "changePct24h": -0.0087,
+      "roi7d": -0.1834,
+      "roi1m": -0.2471,
+      "roi3m": -0.1629,
+      "roi1y": -0.4282,
+      "ytd": -0.3735
+    },
+    {
+      "ticker": "ssiLayer1",
+      "price": 7.517645012298,
+      "changePct24h": -0.0113,
+      "roi7d": -0.1623,
+      "roi1m": -0.273,
+      "roi3m": -0.2215,
+      "roi1y": -0.4235,
+      "ytd": -0.3758
+    },
+    {
+      "ticker": "ssiMAG7",
+      "price": 10.67139238758,
+      "changePct24h": -0.014,
+      "roi7d": -0.1792,
+      "roi1m": -0.2686,
+      "roi3m": -0.1906,
+      "roi1y": -0.4695,
+      "ytd": -0.3937,
+      "constituents": [
+        {
+          "symbol": "solana",
+          "weight": 0.0263
+        },
+        {
+          "symbol": "dogecoin",
+          "weight": 0.0062
+        },
+        {
+          "symbol": "xrp",
+          "weight": 0.042
+        },
+        {
+          "symbol": "binance-coin",
+          "weight": 0.0432
+        },
+        {
+          "symbol": "ethereum",
+          "weight": 0.1377
+        },
+        {
+          "symbol": "bitcoin",
+          "weight": 0.7363
+        },
+        {
+          "symbol": "hyperliquid",
+          "weight": 0.0083
+        }
+      ]
+    },
+    {
+      "ticker": "ssiSocialFi",
+      "price": 3.908344445509,
+      "changePct24h": 0.0029,
+      "roi7d": -0.1599,
+      "roi1m": -0.2811,
+      "roi3m": -0.2937,
+      "roi1y": -0.441,
+      "ytd": -0.4111
+    },
+    {
+      "ticker": "ssiDePIN",
+      "price": 1.310179494404,
+      "changePct24h": 0.0047,
+      "roi7d": -0.1851,
+      "roi1m": -0.3506,
+      "roi3m": -0.1047,
+      "roi1y": -0.6649,
+      "ytd": -0.4692
+    },
+    {
+      "ticker": "ssiMeme",
+      "price": 4.892268662208,
+      "changePct24h": 0.0108,
+      "roi7d": -0.1901,
+      "roi1m": -0.2999,
+      "roi3m": -0.275,
+      "roi1y": -0.6236,
+      "ytd": -0.4916
+    },
+    {
+      "ticker": "ssiPayFi",
+      "price": 12.398759648857,
+      "changePct24h": 0.0174,
+      "roi7d": -0.105,
+      "roi1m": -0.2744,
+      "roi3m": -0.2423,
+      "roi1y": -0.5717,
+      "ytd": -0.4937
+    },
+    {
+      "ticker": "ssiLayer2",
+      "price": 0.540330008773,
+      "changePct24h": 0.001,
+      "roi7d": -0.1566,
+      "roi1m": -0.3226,
+      "roi3m": -0.0436,
+      "roi1y": -0.6449,
+      "ytd": -0.5039
+    },
+    {
+      "ticker": "ssiGameFi",
+      "price": 0.685851058456,
+      "changePct24h": 0.0042,
+      "roi7d": -0.1653,
+      "roi1m": -0.27,
+      "roi3m": -0.1189,
+      "roi1y": -0.6853,
+      "ytd": -0.5297
+    },
+    {
+      "ticker": "ssiNFT",
+      "price": 1.419738136123,
+      "changePct24h": 0.0187,
+      "roi7d": -0.2285,
+      "roi1m": -0.3804,
+      "roi3m": -0.33,
+      "roi1y": -0.6621,
+      "ytd": -0.5347
+    }
+  ],
+  "hotNews": [
+    {
+      "id": "2125026984568033282",
+      "title": "Jensen Huang resumes role as CEO of Nvidia, stock surges over 35%",
+      "summary": "NVIDIA's board unanimously approved on November 23, 2026, the reinstatement of Jensen Huang as president, chief executive officer, and director, effective immediately. NVIDIA stated that the board made the decision after",
+      "sourceLink": "https://sosovalue.com/hot/2125026984568033282?from=888001",
+      "releaseTime": 1795481704000
+    },
+    {
+      "id": "2125039712290942978",
+      "title": "Valued at approximately $12.2 million, a certain whale/institution withdrew 3.345 trillion PEPE from Binance within six days\n",
+      "summary": "This whale/institution has withdrawn a total of 3.345 trillion PEPE from Binance over 6 days, worth approximately $12.2 million.\n\n[Odaily]",
+      "sourceLink": "https://sosovalue.com/hot/2125039712290942978?from=888001",
+      "releaseTime": 1795483660000
+    },
+    {
+      "id": "2124927682758008834",
+      "title": "The U.S. Department of Justice seeks to seize over $1.1 billion in USDC linked to the Binance hack incident",
+      "summary": "The U.S. Department of Justice has filed a civil forfeiture lawsuit seeking to seize over $1.1 billion in USDC related to the Binance hack. Prosecutors stated that the involved tokens had previously been frozen. Accordin",
+      "sourceLink": "https://sosovalue.com/hot/2124927682758008834?from=888001",
+      "releaseTime": 1795460451000
+    },
+    {
+      "id": "2124951540940877825",
+      "title": "BTCS sold approximately 27.3 thousand ETH to repay a $43.8 million Aave loan, reducing the borrowing by approximately 81%\n",
+      "summary": "Nasdaq-listed blockchain company BTCS sold approximately 27.3 thousand ETH on November 20 and used the proceeds to repay a loan from the decentralized lending protocol Aave. Documents filed by the company on Monday show ",
+      "sourceLink": "https://sosovalue.com/hot/2124951540940877825?from=888001",
+      "releaseTime": 1795462732000
+    },
+    {
+      "id": "2125057611701366786",
+      "title": "UPBIT lists RPL, ACU, DBR, ON and supports multiple trading pairs",
+      "summary": "UPBIT will list Rocket Pool (RPL), Acurast (ACU), deBridge (DBR), and Orochi Network (ON) for trading on November 24.\n\nRPL and ACU support BTC and USDT trading pairs, DBR supports BTC and USDT trading pairs, and ON suppo",
+      "sourceLink": "https://sosovalue.com/hot/2125057611701366786?from=888001",
+      "releaseTime": 1795487978000
+    },
+    {
+      "id": "2125067190514429953",
+      "title": "$33.39 million position, a whale shorted 200 thousand shares of Nvidia at $167\n",
+      "summary": "A whale made a short position of 200,000 Nvidia shares at $167 after Nvidia rebounded 30%, with a position value of $33.39 million, becoming the largest Nvidia short on Hyperliquid.\n\nThe whale's current short position of",
+      "sourceLink": "https://sosovalue.com/hot/2125067190514429953?from=888001",
+      "releaseTime": 1795490230000
+    },
+    {
+      "id": "2125023053622501377",
+      "title": "The U.S. CFTC issued guidance: derivatives platforms may discount certain crypto assets when including them in the financial resources required for operational costs",
+      "summary": "U.S. Commodity Futures Trading Commission (CFTC) staff issued an official staff guidance allowing regulated derivatives platforms, subject to meeting specific value haircuts, to count Bitcoin (BTC), Ethereum (ETH), and e",
+      "sourceLink": "https://sosovalue.com/hot/2125023053622501377?from=888001",
+      "releaseTime": 1795479785000
+    },
+    {
+      "id": "2125074658604355585",
+      "title": "Bithumb will list ON, SANC, and SQD tokens on the KRW market\n",
+      "summary": "Korean crypto exchange Bithumb will list ON, SANC, and SQD tokens on the KRW market, with specific trading launch times subject to official announcements.\n\n[Odaily]",
+      "sourceLink": "https://sosovalue.com/hot/2125074658604355585?from=888001",
+      "releaseTime": 1795492055000
+    }
+  ],
+  "treasuries": [
+    {
+      "ticker": "MSTR",
+      "name": "Strategy",
+      "listLocation": "United States"
+    },
+    {
+      "ticker": "3350",
+      "name": "Metaplanet",
+      "listLocation": "Japan"
+    },
+    {
+      "ticker": "CEP",
+      "name": "XXI",
+      "listLocation": "United States"
+    },
+    {
+      "ticker": "ASST",
+      "name": "Strive Inc.",
+      "listLocation": "United States"
+    },
+    {
+      "ticker": "MARA",
+      "name": "MARA Holdings",
+      "listLocation": "United States"
+    },
+    {
+      "ticker": "BSTR",
+      "name": "Bitcoin Standard Treasury Company",
+      "listLocation": "United States"
+    },
+    {
+      "ticker": "BLSH",
+      "name": "Bullish",
+      "listLocation": "United States"
+    },
+    {
+      "ticker": "SPCX",
+      "name": "SpaceX",
+      "listLocation": "United States"
+    },
+    {
+      "ticker": "GLXY",
+      "name": "Galaxy Digital Holdings",
+      "listLocation": "United States"
+    },
+    {
+      "ticker": "COIN",
+      "name": "Coinbase",
+      "listLocation": "United States"
+    },
+    {
+      "ticker": "HUT",
+      "name": "Hut8",
+      "listLocation": "United States"
+    },
+    {
+      "ticker": "RIOT",
+      "name": "Riot Platforms",
+      "listLocation": "United States"
+    },
+    {
+      "ticker": "CLSK",
+      "name": "CleanSpark",
+      "listLocation": "United States"
+    },
+    {
+      "ticker": "TSLA",
+      "name": "Tesla",
+      "listLocation": "United States"
+    },
+    {
+      "ticker": "XYZ",
+      "name": "Block",
+      "listLocation": "United States"
+    }
+  ]
+}

@@ -72,22 +72,25 @@ Solo on-chain traders operating across **SoDEX's 107 perpetual markets and 48 sp
 - **Empirical Bootstrap Monte Carlo & Tail-Stress Risk Engine (`MonteCarloStressCard`, v1.2.0):** Runs **1,000 deterministic seeded paths** (`24h / 72h / 168h`) bootstrapped directly from live SoDEX `/klines` realized log-returns (zero synthetic assumptions) to compute **95% VaR**, **99% CVaR (Expected Shortfall)**, **Liquidation Probability**, **TP/SL Hit Rates**, an SVG **P10–P90 Equity Fan Chart**, and a **4-Scenario Deterministic Tail-Stress Matrix** (`-10% Flash Crash`, `+10% Short Squeeze`, `-20% Extreme Tail`, `Funding Flip -2x`) with 1-click **Risk Audit JSON** and **Scanner CSV** exports.
 - Outputs a **non-custodial deterministic SoDEX EIP-712 `PerpOrder` payload** (1-click Copy JSON + 1-click Launch on SoDEX), persistent **`localStorage` Mark-to-Market Paper Ledger**, and **Counterfactual Risk-Gate Equity Curve**.
 
-### 5. Tab 4 — Native SoSoValue OpenAPI v1 Intelligence Hub (BYOK)
-- Native browser CORS integration with `https://openapi.sosovalue.com/openapi/v1/*`:
-  - `/etfs/summary-history?type=us-btc-spot` (computes 30d ETF net-flow z-score and feeds it directly into Tab 1 Conviction)
-  - `/indices`, `/news/hot`, `/btc-treasuries`
-- Supports **Bring-Your-Own-Key (`x-soso-api-key`)** stored only in browser `localStorage`, plus a 1-click **`Test Live CORS & Auth Gate`** button.
+### 5. Tab 4 — Institutional ETF & SSI Flow Intelligence (Live SoSoValue OpenAPI v1 — v1.3.0)
+- **Zero-Secret Hybrid Live Architecture:**
+  - **Live Proxy (`server/soso-proxy.mjs`):** Zero-dependency Node ESM HTTP proxy reading `process.env.SOSO_API_KEY` from environment (CORS-enabled, 60s TTL cache, per-IP rate limiting, default port `9105`, strict `/openapi/v1/*` allowlist).
+  - **Verified Live Snapshot (`public/data/soso-snapshot.json`):** Populated directly via `scripts/fetch-soso-snapshot.mjs` from **24 verified live SoSoValue OpenAPI v1 endpoints** (zero credentials bundled) so the public GitHub Pages deployment loads real US Spot BTC/ETH/SOL/XRP ETF flows, all 13 SSI Crypto Indices, Market Overview, Hot News, and Corporate BTC Treasuries immediately on page load!
+  - **In-Memory Direct Key (RAM-only BYOK):** Judges can optionally connect to a local/custom `soso-proxy` URL or enter a RAM-only `x-soso-api-key` (never saved to `localStorage` or disk), with seamless fallback to the verified live snapshot.
+- **Cross-Venue ETF Flow × SoDEX Funding/Basis Matrix:** Joins live SoSoValue US Spot ETF net inflows/outflows (30d Flow Z-Score, 5d Cumulative Flow, AUM) directly against live SoDEX Perp Funding APR (%), Mark-Index Basis (bps), and Spot↔Perp Spread (bps) to classify actionable divergence & accumulation regimes, plus maps all **13 live SSI sector indices** (`ssiMAG7`, `ssiDeFi`, `ssiAI`, `ssiLayer1`, `ssiRWA`, `ssiMeme`, etc.) to overlapping SoDEX Perp sector funding averages.
 
 ---
 
-## Reproducible Verification (CLI & Unit Tests)
+## Reproducible Verification (CLI, Proxy & Unit Tests)
 
 ```bash
 npm install
-npm test              # 16/16 Vitest unit tests (funding APR, basis bps, L2 slippage, regime, fail-closed risk gates, 2-leg delta-neutral carry, WS parser, empirical bootstrap Monte Carlo VaR/CVaR & CSV export)
-npm run verify:sodex  # 14/14 live REST, ValueChain RPC & 500ms WebSocket l2Book endpoints verified (zero auth required)
-npm run verify:soso   # Verifies SoSoValue OpenAPI v1 CORS & auth contract (pass SOSO_API_KEY=... for live 200 OK)
-npm run build         # TypeScript strict check + Vite production bundle
+npm test                    # 19/19 Vitest unit tests (funding APR, basis bps, L2 slippage, regime, fail-closed risk gates, 2-leg delta-neutral carry, WS parser, Monte Carlo VaR/CVaR, CSV export, SoSoValue ETF Z-score & ETF/SSI-vs-SoDEX cross-check)
+npm run verify:sodex        # 14/14 live REST, ValueChain RPC & 500ms WebSocket l2Book endpoints verified (zero auth required)
+npm run verify:soso         # Verifies SoSoValue OpenAPI v1 CORS & auth contract (pass SOSO_API_KEY=... for 7/7 live 200 OK)
+SOSO_API_KEY=... npm run soso:proxy     # Starts zero-dep CORS/cached/rate-limited SoSoValue proxy on http://127.0.0.1:9105
+SOSO_API_KEY=... npm run soso:snapshot  # Refreshes sanitized public/data/soso-snapshot.json from 24 live v1 endpoints
+npm run build               # TypeScript strict check + Vite production bundle
 ```
 
 ---
