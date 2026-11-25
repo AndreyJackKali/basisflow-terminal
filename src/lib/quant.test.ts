@@ -19,6 +19,9 @@ import {
   runLiveBootstrapMonteCarlo,
   serializeMarketsToCsv,
   simulateOrderbookSlippage,
+  STALE_BASIS_BPS,
+  THIN_BOOK_SCORE_CAP,
+  THIN_BOOK_USD,
 } from './quant';
 import { parseSodexWsMessage } from './ws';
 import type { EnrichedMarket, KlineBar, OrderbookData, PaperTrade, PerpSymbolInfo } from '../types';
@@ -104,6 +107,47 @@ describe('BasisFlow Quant Engine', () => {
     expect(btc.conviction.direction).toBe('BASIS ARB');
     expect(btc.conviction.score).toBeGreaterThan(50);
     expect(btc.conviction.score).toBeLessThanOrEqual(100);
+  });
+
+  it('flags stale spot prints and thin books instead of ranking them as tradable edges', () => {
+    const markets = enrichMarkets(
+      [
+        sampleContract,
+        { ...sampleContract, id: 3, name: 'ADA-USD', displayName: 'ADA-USD', baseCoin: 'ADA' },
+      ],
+      [
+        {
+          symbol: 'BTC-USD', lastPx: '63200', openPx: '62000', highPx: '63500', lowPx: '61900',
+          volume: '100', quoteVolume: '6300000', vwap: '63000', change: '1200', changePct: 1.93,
+          askPx: '63201', askSz: '1', bidPx: '63199', bidSz: '1', fundingRate: '0.00004', nextFundingTime: 0,
+        },
+        {
+          symbol: 'ADA-USD', lastPx: '0.1421', openPx: '0.15', highPx: '0.15', lowPx: '0.14',
+          volume: '40000', quoteVolume: '6300', vwap: '0.142', change: '-0.007', changePct: -4.56,
+          askPx: '0.1422', askSz: '100', bidPx: '0.1420', bidSz: '100', fundingRate: '0.000001', nextFundingTime: 0,
+        },
+      ],
+      [
+        { symbol: 'BTC-USD', openInterest: '50', markPrice: '63250', indexPrice: '63100', fundingRate: '0.00004', nextFundingTime: 0 },
+        { symbol: 'ADA-USD', openInterest: '1500', markPrice: '0.1421', indexPrice: '0.1421', fundingRate: '0.000001', nextFundingTime: 0 },
+      ],
+      [
+        { symbol: 'BTC-USD', bidPx: '63199', bidSz: '2', askPx: '63201', askSz: '2' },
+        { symbol: 'ADA-USD', bidPx: '0.1420', bidSz: '100', askPx: '0.1422', askSz: '100' },
+      ],
+      [{ id: 11, name: 'vADA_vUSDC', displayName: 'ADA/USDC', baseCoin: 'vADA', quoteCoin: 'vUSDC', pricePrecision: 4 }],
+      [{ symbol: 'vADA_vUSDC', lastPx: '0.2538', bidPx: '0.2500', askPx: '0.2576', quoteVolume: '120', changePct: 0 }],
+      0,
+    );
+    const ada = markets.find((m) => m.symbol === 'ADA-USD')!;
+    expect(Math.abs(ada.spotPerpSpreadBps!)).toBeGreaterThan(STALE_BASIS_BPS);
+    expect(ada.conviction.direction).not.toBe('BASIS ARB');
+    expect(ada.conviction.qualityFlags).toEqual(['STALE_SPOT', 'THIN_BOOK']);
+    expect(ada.conviction.score).toBeLessThanOrEqual(THIN_BOOK_SCORE_CAP);
+    expect(ada.conviction.rationale).toContain('stale');
+    const btc = markets.find((m) => m.symbol === 'BTC-USD')!;
+    expect(btc.conviction.qualityFlags).toEqual([]);
+    expect(btc.quoteVolume24h).toBeGreaterThanOrEqual(THIN_BOOK_USD);
   });
 
   it('simulates exact L2 orderbook VWAP and slippage bps across multiple levels', () => {

@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ArrowUpDown, Download, Search, TrendingUp, Layers, ShieldCheck, Activity } from 'lucide-react';
 import type { EnrichedMarket } from '../types';
-import { serializeMarketsToCsv } from '../lib/quant';
+import { serializeMarketsToCsv, THIN_BOOK_USD } from '../lib/quant';
 
 interface Props {
   markets: EnrichedMarket[];
@@ -36,7 +36,9 @@ export const ScannerTab: React.FC<Props> = ({
     const overlapCount = markets.filter((m) => m.spotPerpSpreadBps !== null).length;
     const totalVol = markets.reduce((a, m) => a + m.quoteVolume24h, 0);
     const totalOi = markets.reduce((a, m) => a + m.openInterestUsd, 0);
-    const topCarry = [...markets].sort(
+    // Headline carry only from markets with executable size (>= THIN_BOOK_USD 24h volume)
+    const tradable = markets.filter((m) => m.quoteVolume24h >= THIN_BOOK_USD);
+    const topCarry = [...(tradable.length ? tradable : markets)].sort(
       (a, b) => Math.abs(b.annualizedFundingApr) - Math.abs(a.annualizedFundingApr),
     )[0];
     return { overlapCount, totalVol, totalOi, topCarry };
@@ -122,7 +124,7 @@ export const ScannerTab: React.FC<Props> = ({
 
         <div className="bg-[#0e1522] border border-slate-800/90 rounded-lg p-3.5">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span>Peak Annualized Carry</span>
+            <span title={`Largest |funding APR| among markets with >= $${THIN_BOOK_USD / 1000}k 24h volume`}>Peak Tradable Carry</span>
             <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
           </div>
           <div className="text-xl font-mono font-bold text-amber-300 mt-1">
@@ -131,7 +133,9 @@ export const ScannerTab: React.FC<Props> = ({
               : '—'}
           </div>
           <div className="text-[11px] text-slate-400 mt-0.5">
-            {stats.topCarry ? `${stats.topCarry.symbol} (hourly funding)` : 'Loading...'}
+            {stats.topCarry
+              ? `${stats.topCarry.symbol} · ${stats.topCarry.annualizedFundingApr >= 0 ? 'longs pay shorts' : 'shorts pay longs'} · ≥$${THIN_BOOK_USD / 1000}k vol`
+              : 'Loading...'}
           </div>
         </div>
 
@@ -372,6 +376,19 @@ export const ScannerTab: React.FC<Props> = ({
                     <div className="text-[10px] text-slate-500">
                       zF:{m.conviction.fundingZ} zB:{m.conviction.basisZ} zL:{m.conviction.liquidityZ}
                     </div>
+                    {m.conviction.qualityFlags && m.conviction.qualityFlags.length > 0 && (
+                      <div className="flex justify-end gap-1 mt-0.5">
+                        {m.conviction.qualityFlags.map((f) => (
+                          <span
+                            key={f}
+                            className="text-[9px] font-sans px-1 rounded border border-amber-500/40 text-amber-300/90 bg-amber-500/10"
+                            title={m.conviction.rationale}
+                          >
+                            {f === 'STALE_SPOT' ? 'STALE SPOT' : 'THIN BOOK'}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </td>
 
                   <td className="py-2.5 px-3 text-right font-sans">

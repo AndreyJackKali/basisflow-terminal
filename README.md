@@ -1,4 +1,4 @@
-# BasisFlow Terminal (v1.5.0)
+# BasisFlow Terminal (v1.5.1)
 
 **Institutional Funding-Basis, 500ms Live WebSocket L2 Microstructure, Delta-Neutral Hedge Builder, Empirical Bootstrap Monte Carlo Risk Desk, One-Person Finance Business Monetization & Live SoSoValue OpenAPI v1 Intelligence**  
 Built for **SoSoValue × ValueChain × SoDEX WaveHack (Wave 3)**
@@ -48,6 +48,7 @@ Solo on-chain traders operating across **SoDEX's 107 perpetual markets and 48 sp
 - Zero mocked or fabricated numbers disguised as live data.
 - Header telemetry bar displays live **SoDEX Mainnet / Testnet** switch, real-time **`WS: N ticks`** WebSocket counter (`wss://mainnet-gw.sodex.dev/ws/perps`), **ValueChain L1 Block Height** (`eth_blockNumber`), and clickable **`LIVE` / `BYOK` / `OFFLINE`** source badges.
 - Clicking any badge or **API Console** opens a live inspection drawer logging every real HTTP request, status code, latency (`ms`), row count, and raw JSON payload snippet.
+- **Data-quality gates (v1.5.1):** Spot↔Perp gaps wider than `1,500 bps` are flagged **`STALE SPOT`** (illiquid/stale spot print) and excluded from basis scoring instead of being ranked as a fake arbitrage; markets under `$100k` 24h volume are flagged **`THIN BOOK`** with conviction capped at `55`, and the headline *Peak Tradable Carry* KPI only considers markets with executable size. Covered by a dedicated Vitest case (`25/25` PASS).
 
 ### 2. Tab 1 — Live Basis & Carry Scanner (107 Perps + 48 Spot + Joined Spot↔Perp Pairs)
 - Consumes 6 live SoDEX Mainnet/Testnet REST endpoints simultaneously (`/perps/markets/symbols`, `/tickers`, `/mark-prices`, `/bookTickers`, `/spot/markets/symbols`, `/spot/markets/tickers`).

@@ -109,6 +109,15 @@ export function normalizeSpotBase(baseCoin: string): string {
   return stripped.toUpperCase();
 }
 
+/** Markets with less than this 24h quote volume are flagged THIN_BOOK and their conviction score is capped. */
+export const THIN_BOOK_USD = 100_000;
+/** Spot↔Perp gaps wider than this are treated as a stale / illiquid spot print, not a tradable basis. */
+export const STALE_BASIS_BPS = 1500;
+/** Conviction cap applied to THIN_BOOK markets so headline ranks favour executable size. */
+export const THIN_BOOK_SCORE_CAP = 55;
+
+const isStaleBasis = (bps: number | null): boolean => bps !== null && Math.abs(bps) > STALE_BASIS_BPS;
+
 export function enrichMarkets(
   perpSymbols: PerpSymbolInfo[],
   perpTickers: PerpTicker[],
@@ -195,7 +204,9 @@ export function enrichMarkets(
   // Cross-sectional stats for transparent z-score normalization
   const absFundingStats = meanStd(prelim.map((m) => Math.abs(m.annualizedFundingApr)));
   const absBasisStats = meanStd(
-    prelim.map((m) => Math.abs(m.spotPerpSpreadBps ?? m.markIndexBasisBps)),
+    prelim.map((m) =>
+      Math.abs(isStaleBasis(m.spotPerpSpreadBps) ? m.markIndexBasisBps : (m.spotPerpSpreadBps ?? m.markIndexBasisBps)),
+    ),
   );
   const logVolStats = meanStd(prelim.map((m) => Math.log10(Math.max(10, m.quoteVolume24h))));
   const spreadStats = meanStd(prelim.map((m) => Math.min(200, m.spreadBps || 25)));
@@ -203,7 +214,9 @@ export function enrichMarkets(
 
   return prelim.map((m) => {
     const fundingZ = zScore(Math.abs(m.annualizedFundingApr), absFundingStats.mean, absFundingStats.std);
-    const effectiveBasis = Math.abs(m.spotPerpSpreadBps ?? m.markIndexBasisBps);
+    const staleSpot = isStaleBasis(m.spotPerpSpreadBps);
+    const thinBook = m.quoteVolume24h < THIN_BOOK_USD;
+    const effectiveBasis = Math.abs(staleSpot ? m.markIndexBasisBps : (m.spotPerpSpreadBps ?? m.markIndexBasisBps));
     const basisZ = zScore(effectiveBasis, absBasisStats.mean, absBasisStats.std);
     const volZ = zScore(Math.log10(Math.max(10, m.quoteVolume24h)), logVolStats.mean, logVolStats.std);
     const tightSpreadZ = -zScore(Math.min(200, m.spreadBps || 25), spreadStats.mean, spreadStats.std);
@@ -219,12 +232,13 @@ export function enrichMarkets(
       0.10 * momentumZ +
       0.06 * Math.abs(etfFactor);
 
-    const score = sigmoidScore(compositeZ);
+    const rawScore = sigmoidScore(compositeZ);
+    const score = thinBook ? Math.min(rawScore, THIN_BOOK_SCORE_CAP) : rawScore;
 
     let direction: SignalDirection = 'NEUTRAL';
     let rationale = 'Balanced funding and tight mark-to-index parity.';
 
-    if (m.spotPerpSpreadBps !== null && Math.abs(m.spotPerpSpreadBps) >= 18) {
+    if (!staleSpot && m.spotPerpSpreadBps !== null && Math.abs(m.spotPerpSpreadBps) >= 18) {
       direction = 'BASIS ARB';
       rationale =
         m.spotPerpSpreadBps > 0
@@ -241,6 +255,16 @@ export function enrichMarkets(
       rationale = `High execution liquidity ($${(m.quoteVolume24h / 1000).toFixed(0)}k 24h vol, ${m.spreadBps.toFixed(1)} bps spread) with active regime volatility.`;
     }
 
+    const qualityFlags: Array<'STALE_SPOT' | 'THIN_BOOK'> = [];
+    if (staleSpot) {
+      qualityFlags.push('STALE_SPOT');
+      rationale += ` Spot print (${m.spotDisplayName}) sits ${m.spotPerpSpreadBps!.toFixed(0)} bps from perp — treated as stale/illiquid, excluded from basis scoring.`;
+    }
+    if (thinBook) {
+      qualityFlags.push('THIN_BOOK');
+      rationale += ` Thin book ($${(m.quoteVolume24h / 1000).toFixed(0)}k 24h vol < $${THIN_BOOK_USD / 1000}k): size-limited, conviction capped at ${THIN_BOOK_SCORE_CAP}.`;
+    }
+
     const conviction: ConvictionBreakdown = {
       fundingZ: Number(fundingZ.toFixed(2)),
       basisZ: Number(basisZ.toFixed(2)),
@@ -251,6 +275,7 @@ export function enrichMarkets(
       score,
       direction,
       rationale,
+      qualityFlags,
     };
 
     return { ...m, conviction };

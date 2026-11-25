@@ -130,6 +130,8 @@ export interface ConvictionBreakdown {
   score: number;
   direction: SignalDirection;
   rationale: string;
+  /** Data-quality flags: STALE_SPOT (spot print too far from perp to be tradable), THIN_BOOK (<$100k 24h volume). */
+  qualityFlags?: Array<'STALE_SPOT' | 'THIN_BOOK'>;
 }
 
 export interface EnrichedMarket {
