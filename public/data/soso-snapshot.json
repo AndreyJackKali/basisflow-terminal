@@ -1,16 +1,16 @@
 {
   "schemaVersion": "1.3.0",
   "source": "SoSoValue OpenAPI v1 (Live Verified Snapshot)",
-  "fetchedAt": "2026-11-24T21:38:22.160Z",
-  "fetchedDateUtc": "2026-11-24",
+  "fetchedAt": "2026-11-25T00:43:21.820Z",
+  "fetchedDateUtc": "2026-11-25",
   "endpointsVerified": 24,
   "marketOverview": {
-    "totalMarketCap": 2052514483110.8564,
-    "totalMarketCapChangePct": -2.16123714,
-    "totalVolume24h": 74803592348.96,
-    "ethGasGwei": 0.2164978,
-    "btcGasSatVb": 0.12,
-    "asOf": 1795556297956
+    "totalMarketCap": 2043028523717.5557,
+    "totalMarketCapChangePct": -2.38226619,
+    "totalVolume24h": 73102789248.37,
+    "ethGasGwei": 0.145570997,
+    "btcGasSatVb": 1.01,
+    "asOf": 1795567397952
   },
   "etfFlows": {
     "BTC": [
@@ -600,13 +600,13 @@
   "ssiIndices": [
     {
       "ticker": "ssiDeFi",
-      "price": 5.840728235378,
-      "changePct24h": -0.0489,
-      "roi7d": -0.187,
-      "roi1m": -0.2981,
-      "roi3m": -0.1588,
-      "roi1y": -0.1159,
-      "ytd": 0.1197,
+      "price": 5.815820998118,
+      "changePct24h": -0.048,
+      "roi7d": -0.1905,
+      "roi1m": -0.3011,
+      "roi3m": -0.1624,
+      "roi1y": -0.1197,
+      "ytd": 0.1149,
       "constituents": [
         {
           "symbol": "pancakeswap",
@@ -652,53 +652,53 @@
     },
     {
       "ticker": "ssiAI",
-      "price": 3.345267841446,
-      "changePct24h": -0.0508,
-      "roi7d": -0.0548,
-      "roi1m": -0.2545,
-      "roi3m": -0.0524,
-      "roi1y": -0.5003,
-      "ytd": -0.2611
+      "price": 3.360735556576,
+      "changePct24h": -0.045,
+      "roi7d": -0.0505,
+      "roi1m": -0.2511,
+      "roi3m": -0.048,
+      "roi1y": -0.498,
+      "ytd": -0.2577
     },
     {
       "ticker": "ssiRWA",
-      "price": 3.45548078468,
-      "changePct24h": -0.0344,
-      "roi7d": -0.2648,
-      "roi1m": -0.4046,
-      "roi3m": -0.2883,
-      "roi1y": -0.4398,
-      "ytd": -0.3067
+      "price": 3.497040814544,
+      "changePct24h": -0.0179,
+      "roi7d": -0.2559,
+      "roi1m": -0.3975,
+      "roi3m": -0.2797,
+      "roi1y": -0.433,
+      "ytd": -0.2983
     },
     {
       "ticker": "ssiCeFi",
-      "price": 17.215657961928,
-      "changePct24h": -0.0189,
-      "roi7d": -0.1892,
-      "roi1m": -0.2525,
-      "roi3m": -0.1689,
-      "roi1y": -0.4323,
-      "ytd": -0.378
+      "price": 17.099245409101,
+      "changePct24h": -0.0224,
+      "roi7d": -0.1947,
+      "roi1m": -0.2576,
+      "roi3m": -0.1745,
+      "roi1y": -0.4361,
+      "ytd": -0.3822
     },
     {
       "ticker": "ssiLayer1",
-      "price": 7.428195326257,
-      "changePct24h": -0.0259,
-      "roi7d": -0.1723,
-      "roi1m": -0.2817,
-      "roi3m": -0.2308,
-      "roi1y": -0.4303,
-      "ytd": -0.3832
+      "price": 7.391109413433,
+      "changePct24h": -0.0248,
+      "roi7d": -0.1764,
+      "roi1m": -0.2853,
+      "roi3m": -0.2346,
+      "roi1y": -0.4332,
+      "ytd": -0.3863
     },
     {
       "ticker": "ssiMAG7",
-      "price": 10.580900151573,
-      "changePct24h": -0.0246,
-      "roi7d": -0.1861,
-      "roi1m": -0.2748,
-      "roi3m": -0.1974,
-      "roi1y": -0.474,
-      "ytd": -0.3989,
+      "price": 10.52222612867,
+      "changePct24h": -0.0261,
+      "roi7d": -0.1906,
+      "roi1m": -0.2788,
+      "roi3m": -0.2019,
+      "roi1y": -0.477,
+      "ytd": -0.4022,
       "constituents": [
         {
           "symbol": "solana",
@@ -732,110 +732,82 @@
     },
     {
       "ticker": "ssiSocialFi",
-      "price": 3.752206643843,
-      "changePct24h": -0.0596,
-      "roi7d": -0.1934,
-      "roi1m": -0.3098,
-      "roi3m": -0.3219,
-      "roi1y": -0.4633,
-      "ytd": -0.4346
+      "price": 3.658695289666,
+      "changePct24h": -0.0605,
+      "roi7d": -0.2135,
+      "roi1m": -0.327,
+      "roi3m": -0.3388,
+      "roi1y": -0.4767,
+      "ytd": -0.4487
     },
     {
       "ticker": "ssiDePIN",
-      "price": 1.27859376994,
-      "changePct24h": -0.0346,
-      "roi7d": -0.2047,
-      "roi1m": -0.3663,
-      "roi3m": -0.1263,
-      "roi1y": -0.6729,
-      "ytd": -0.482
+      "price": 1.269418591112,
+      "changePct24h": -0.0413,
+      "roi7d": -0.2104,
+      "roi1m": -0.3708,
+      "roi3m": -0.1326,
+      "roi1y": -0.6753,
+      "ytd": -0.4857
     },
     {
       "ticker": "ssiMeme",
-      "price": 4.810321385414,
-      "changePct24h": -0.0263,
-      "roi7d": -0.2036,
-      "roi1m": -0.3116,
-      "roi3m": -0.2871,
-      "roi1y": -0.6299,
-      "ytd": -0.5002
+      "price": 4.787936478064,
+      "changePct24h": -0.0292,
+      "roi7d": -0.2073,
+      "roi1m": -0.3148,
+      "roi3m": -0.2904,
+      "roi1y": -0.6316,
+      "ytd": -0.5025
     },
     {
       "ticker": "ssiPayFi",
-      "price": 12.054786205162,
-      "changePct24h": -0.0235,
-      "roi7d": -0.1299,
-      "roi1m": -0.2946,
-      "roi3m": -0.2633,
-      "roi1y": -0.5835,
-      "ytd": -0.5078
+      "price": 12.063621264919,
+      "changePct24h": -0.0253,
+      "roi7d": -0.1292,
+      "roi1m": -0.294,
+      "roi3m": -0.2628,
+      "roi1y": -0.5832,
+      "ytd": -0.5074
     },
     {
       "ticker": "ssiLayer2",
-      "price": 0.520038949026,
-      "changePct24h": -0.0448,
-      "roi7d": -0.1882,
-      "roi1m": -0.348,
-      "roi3m": -0.0796,
-      "roi1y": -0.6582,
-      "ytd": -0.5225
+      "price": 0.517784646849,
+      "changePct24h": -0.0464,
+      "roi7d": -0.1918,
+      "roi1m": -0.3508,
+      "roi3m": -0.0835,
+      "roi1y": -0.6597,
+      "ytd": -0.5246
     },
     {
       "ticker": "ssiGameFi",
-      "price": 0.663134076885,
-      "changePct24h": -0.0327,
-      "roi7d": -0.193,
-      "roi1m": -0.2941,
-      "roi3m": -0.1481,
-      "roi1y": -0.6957,
-      "ytd": -0.5453
+      "price": 0.664668537978,
+      "changePct24h": -0.0313,
+      "roi7d": -0.1911,
+      "roi1m": -0.2925,
+      "roi3m": -0.1461,
+      "roi1y": -0.695,
+      "ytd": -0.5442
     },
     {
       "ticker": "ssiNFT",
-      "price": 1.371960898415,
-      "changePct24h": -0.0332,
-      "roi7d": -0.2545,
-      "roi1m": -0.4013,
-      "roi3m": -0.3525,
-      "roi1y": -0.6734,
-      "ytd": -0.5504
+      "price": 1.365034100505,
+      "changePct24h": -0.0406,
+      "roi7d": -0.2582,
+      "roi1m": -0.4043,
+      "roi3m": -0.3558,
+      "roi1y": -0.6751,
+      "ytd": -0.5526
     }
   ],
   "hotNews": [
-    {
-      "id": "2125168075007942658",
-      "title": "Lookonchain: Ansem is suspected of a hack, and the hacker has transferred 2.15 million USDC\n",
-      "summary": "Ansem (@blknoiz06) appears to have been hacked. The hacker has transferred funds obtained from selling meme coins to the Arbitrum address 0xAC33, and so far $2.15 million in USDC has been moved.\n\n[Odaily]",
-      "sourceLink": "https://sosovalue.com/hot/2125168075007942658?from=888001",
-      "releaseTime": 1795514198000
-    },
     {
       "id": "2125249361209987073",
       "title": "Coinkite releases post-mortem on COLDCARD seed generation flaw",
       "summary": "Bitcoin hardware wallet manufacturer Coinkite has today released a full retrospective on the COLDCARD seed generation flaw. The company stated that all thefts were carried out by offline regeneration of affected private ",
       "sourceLink": "https://sosovalue.com/hot/2125249361209987073?from=888001",
       "releaseTime": 1795533708000
-    },
-    {
-      "id": "2125184128502673410",
-      "title": "Ansem initially suspects that the Pump wallet breach is related to unauthorized access to Bullpen's profile.\n",
-      "summary": "According to Ansem's monitoring, his Pump wallet was attacked and he is currently trying to determine the cause. Ansem initially suspects that the attack may be related to unauthorized access to his Bullpen profile, whic",
-      "sourceLink": "https://sosovalue.com/hot/2125184128502673410?from=888001",
-      "releaseTime": 1795518257000
-    },
-    {
-      "id": "2125157726189215745",
-      "title": "Anthropic's pre-market decline widened to 5%, breaking below its IPO offering price of $83",
-      "summary": "Anthropic (ANT.O) pre-market trading on US stocks extended its decline to 5%, falling below the IPO issue price of $83.\n\n[PANews]",
-      "sourceLink": "https://sosovalue.com/hot/2125157726189215745?from=888001",
-      "releaseTime": 1795518744000
-    },
-    {
-      "id": "2125201513680474113",
-      "title": "Binance said it is cooperating with the U.S. Department of Justice to advance the proceedings for confiscating stolen assets",
-      "summary": "Binance posted that it is closely coordinating with the U.S. Department of Justice (DOJ) and industry partners assisting in freezing the involved assets, and will continue to cooperate in the asset forfeiture process to ",
-      "sourceLink": "https://sosovalue.com/hot/2125201513680474113?from=888001",
-      "releaseTime": 1795522273000
     },
     {
       "id": "2125248259455279106",
@@ -852,11 +824,39 @@
       "releaseTime": 1795525362000
     },
     {
+      "id": "2125296190609952769",
+      "title": "SEC staff no-action letter, Molecule's unregistered token issuance not recommended for enforcement\n",
+      "summary": "SEC staff has issued a no-action letter to the biotech platform Molecule.\n\nAccording to the facts stated in Molecule’s application, holders can lock the functional tokens they claim to have to cast advisory votes on rese",
+      "sourceLink": "https://sosovalue.com/hot/2125296190609952769?from=888001",
+      "releaseTime": 1795544872000
+    },
+    {
       "id": "2125225886905217025",
       "title": "$40 million to $50 million buyback proposal for SKY, Sky aims to ease stUSDS withdrawal difficulties\n",
       "summary": "A lender in the Sky Protocol stUSDS pool has proposed using $40 million to $50 million of reserve funds to repurchase SKY off-market from borrowers, freeing up capital for withdrawals by depositors. The USDS obtained fro",
       "sourceLink": "https://sosovalue.com/hot/2125225886905217025?from=888001",
       "releaseTime": 1795528033000
+    },
+    {
+      "id": "2125259206175174658",
+      "title": "Sources: Jensen Huang said Nvidia does not need a succession plan, promising to do better in his second tenure as CEO.\n",
+      "summary": "Nvidia CEO Jensen Huang publicly apologized to employees at the first all-hands meeting after his reinstatement, admitting to violating the company’s code of conduct and revealing that he receives one and a half hours of",
+      "sourceLink": "https://sosovalue.com/hot/2125259206175174658?from=888001",
+      "releaseTime": 1795565798000
+    },
+    {
+      "id": "2125232225188057089",
+      "title": "The Trump administration plans to restart its tariff offensive, with related decisions expected to be announced as early as Tuesday.\n",
+      "summary": "The United States is preparing to announce as early as Tuesday an increase in tariffs on goods from the European Union and more than a dozen other economies. The Trump administration is seeking to replace the tariffs tha",
+      "sourceLink": "https://sosovalue.com/hot/2125232225188057089?from=888001",
+      "releaseTime": 1795529598000
+    },
+    {
+      "id": "2125375355241631745",
+      "title": "Abraxas Capital liquidates all Hyperliquid positions and withdraws remaining funds",
+      "summary": "According to Mlm onchain monitoring, Abraxas Capital has closed out all of its positions on Hyperliquid and withdrawn the remaining funds.\n\nThe firm traded on the platform for nearly two years, with cumulative trading vo",
+      "sourceLink": "https://sosovalue.com/hot/2125375355241631745?from=888001",
+      "releaseTime": 1795563776000
     }
   ],
   "treasuries": [

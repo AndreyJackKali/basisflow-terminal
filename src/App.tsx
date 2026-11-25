@@ -632,6 +632,7 @@ export default function App() {
             orderbook={orderbook}
             spotOrderbook={spotOrderbook}
             klines={klines}
+            sosoState={sosoState}
             killSwitch={killSwitch}
             onToggleKillSwitch={() => setKillSwitch((v) => !v)}
             paperTrades={paperTrades}

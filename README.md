@@ -1,6 +1,6 @@
-# BasisFlow Terminal (v1.4.0)
+# BasisFlow Terminal (v1.5.0)
 
-**Institutional Funding-Basis, 500ms Live WebSocket L2 Microstructure, Delta-Neutral Hedge Builder, Empirical Bootstrap Monte Carlo Risk Desk & Live SoSoValue OpenAPI v1 Intelligence**  
+**Institutional Funding-Basis, 500ms Live WebSocket L2 Microstructure, Delta-Neutral Hedge Builder, Empirical Bootstrap Monte Carlo Risk Desk, One-Person Finance Business Monetization & Live SoSoValue OpenAPI v1 Intelligence**  
 Built for **SoSoValue × ValueChain × SoDEX WaveHack (Wave 3)**
 
 - **Live Terminal (Zero-Auth, Loads Real SoDEX Mainnet + 500ms WS L2 + Live Verified SoSoValue Snapshot Immediately):** https://andreyjackkali.github.io/basisflow-terminal/
@@ -71,6 +71,7 @@ Solo on-chain traders operating across **SoDEX's 107 perpetual markets and 48 sp
   6. Daily Drawdown Circuit Breaker
 - **Multi-Leg Spot↔Perp Delta-Neutral Hedge & Net Carry Builder (`DeltaNeutralHedgeCard`):** Fetches BOTH live **SoDEX Spot L2** (`/api/v1/spot/markets/{pair}/orderbook?limit=20`) and **SoDEX Perp L2** books to compute true **2-leg round-trip slippage + maker/taker fees**, **Net Carry APR (%)**, **Breakeven Holding Hours**, an edge verdict (`POSITIVE EDGE` / `THIN EDGE` / `NEGATIVE AFTER COSTS`), and a 1-click **Atomic 2-Leg Hedge Plan JSON**.
 - **Empirical Bootstrap Monte Carlo & Tail-Stress Risk Engine (`MonteCarloStressCard`, v1.2.0):** Runs **1,000 deterministic seeded paths** (`24h / 72h / 168h`) bootstrapped directly from live SoDEX `/klines` realized log-returns (zero synthetic assumptions) to compute **95% VaR**, **99% CVaR (Expected Shortfall)**, **Liquidation Probability**, **TP/SL Hit Rates**, an SVG **P10–P90 Equity Fan Chart**, and a **4-Scenario Deterministic Tail-Stress Matrix** (`-10% Flash Crash`, `+10% Short Squeeze`, `-20% Extreme Tail`, `Funding Flip -2x`) with 1-click **Risk Audit JSON** and **Scanner CSV** exports.
+- **One-Person On-Chain Finance Business Desk & x402 Signal Publisher (`SoloDeskBusinessCard`, v1.5.0):** Models live unit economics across three solo-operator revenue lines — a high-water-mark Carry Vault (management + performance fees anchored to live top-5 SoDEX carry APR), USDC paid research subscriptions, and per-call x402 agent API feeds — with Client Net APR vs. 4.5% T-Bill alpha, breakeven subscriber count, and 1-click live Markdown Client Brief + x402 JSON export.
 - Outputs a **non-custodial deterministic SoDEX EIP-712 `PerpOrder` payload** (1-click Copy JSON + 1-click Launch on SoDEX), persistent **`localStorage` Mark-to-Market Paper Ledger**, and **Counterfactual Risk-Gate Equity Curve**.
 
 ### 5. Tab 4 — Institutional ETF & SSI Flow Intelligence (Live SoSoValue OpenAPI v1 — v1.3.0)
@@ -86,7 +87,7 @@ Solo on-chain traders operating across **SoDEX's 107 perpetual markets and 48 sp
 
 ```bash
 npm install
-npm test                    # 19/19 Vitest unit tests (funding APR, basis bps, L2 slippage, regime, fail-closed risk gates, 2-leg delta-neutral carry, WS parser, Monte Carlo VaR/CVaR, CSV export, SoSoValue ETF Z-score & ETF/SSI-vs-SoDEX cross-check)
+npm test                    # 24/24 Vitest unit tests (funding APR, basis bps, L2 slippage, regime, fail-closed risk gates, 2-leg delta-neutral carry, WS parser, Monte Carlo VaR/CVaR, CSV export, SoSoValue ETF Z-score, ETF/SSI cross-check & Solo Desk unit economics/x402 brief)
 npm run verify:sodex        # 14/14 live REST, ValueChain RPC & 500ms WebSocket l2Book endpoints verified (zero auth required)
 npm run verify:soso         # Verifies SoSoValue OpenAPI v1 CORS & auth contract (pass SOSO_API_KEY=... for 7/7 live 200 OK)
 SOSO_API_KEY=... npm run soso:proxy     # Starts zero-dep CORS/cached/rate-limited SoSoValue proxy on http://127.0.0.1:9105

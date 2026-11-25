@@ -540,3 +540,55 @@ export interface MonteCarloStressResult {
   bands: MonteCarloStepBand[];
   stressScenarios: TailStressScenario[];
 }
+
+export interface SoloDeskEconomicsInput {
+  managedAumUsd: number;
+  capitalUtilizationPct: number;
+  liveGrossCarryAprPct: number;
+  executionDragAprPct: number;
+  managementFeePct: number;
+  performanceFeePct: number;
+  benchmarkAprPct: number;
+  paidSubscribers: number;
+  monthlySubPriceUsd: number;
+  x402CallsPerDay: number;
+  x402PricePerCallUsd: number;
+  monthlyInfraCostUsd: number;
+}
+
+export interface SoloDeskEconomicsResult {
+  deployedCapitalUsd: number;
+  netStrategyCarryAprPct: number;
+  grossVaultProfitAnnualUsd: number;
+  managementFeeAnnualUsd: number;
+  performanceFeeAnnualUsd: number;
+  clientNetAprPct: number;
+  alphaOverBenchmarkPct: number;
+  subscriptionMrrUsd: number;
+  x402ApiMrrUsd: number;
+  vaultFeeMrrUsd: number;
+  totalGrossMrrUsd: number;
+  totalNetMrrUsd: number;
+  totalNetArrUsd: number;
+  breakevenSubscribers: number;
+  viabilityTag: 'PROFITABLE SOLO DESK' | 'SCALING STAGE' | 'BELOW BREAKEVEN';
+}
+
+export interface OperatorSignalBrief {
+  generatedAtUtc: string;
+  network: NetworkMode;
+  topCarrySignals: Array<{
+    symbol: string;
+    direction: SignalDirection;
+    convictionScore: number;
+    annualizedFundingApr: number;
+    markIndexBasisBps: number;
+    spotPerpSpreadBps: number | null;
+    markPrice: number;
+  }>;
+  btcEtfFlowZScore: number;
+  ethEtfFlowZScore: number;
+  marketCapUsd: number | null;
+  topHeadlines: string[];
+  markdown: string;
+}

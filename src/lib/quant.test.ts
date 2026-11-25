@@ -9,11 +9,13 @@ import {
   computeDeltaNeutralCarry,
   computeEtfFlowStats,
   computeOrderbookImbalance,
+  computeSoloDeskEconomics,
   computeSpotPerpSpreadBps,
   computeSsiSectorFunding,
   detectMarketRegime,
   enrichMarkets,
   evaluatePreTradeRisk,
+  generateOperatorSignalBrief,
   runLiveBootstrapMonteCarlo,
   serializeMarketsToCsv,
   simulateOrderbookSlippage,
@@ -582,5 +584,124 @@ describe('BasisFlow Quant Engine', () => {
     expect(rows[0].matchedSymbols).toEqual(['BTC-USD', 'ETH-USD']);
     // Average of +8.76% and +26.28% = +17.52% APR
     expect(rows[0].avgFundingAprPct).toBeCloseTo(17.52, 1);
+  });
+
+  it('computes solo carry-desk fee split, MRR, ARR, and client net alpha accurately', () => {
+    const res = computeSoloDeskEconomics({
+      managedAumUsd: 250_000,
+      capitalUtilizationPct: 80,
+      liveGrossCarryAprPct: 22.2,
+      executionDragAprPct: 2.2,
+      managementFeePct: 1.0,
+      performanceFeePct: 15,
+      benchmarkAprPct: 4.5,
+      paidSubscribers: 30,
+      monthlySubPriceUsd: 50,
+      x402CallsPerDay: 200,
+      x402PricePerCallUsd: 0.05,
+      monthlyInfraCostUsd: 200,
+    });
+    // Deployed = 200k @ 20% net carry = $40k gross; mgmt = $2,500; perf = 15% * 37,500 = $5,625
+    expect(res.deployedCapitalUsd).toBe(200_000);
+    expect(res.grossVaultProfitAnnualUsd).toBe(40_000);
+    expect(res.managementFeeAnnualUsd).toBe(2_500);
+    expect(res.performanceFeeAnnualUsd).toBe(5_625);
+    expect(res.subscriptionMrrUsd).toBe(1_500);
+    expect(res.x402ApiMrrUsd).toBe(300);
+    expect(res.clientNetAprPct).toBeCloseTo(12.75, 2);
+    expect(res.alphaOverBenchmarkPct).toBeCloseTo(8.25, 2);
+    expect(res.viabilityTag).toBe('PROFITABLE SOLO DESK');
+  });
+
+  it('enforces high-water-mark protection (zero performance fee when carry is negative)', () => {
+    const res = computeSoloDeskEconomics({
+      managedAumUsd: 100_000,
+      capitalUtilizationPct: 100,
+      liveGrossCarryAprPct: -5,
+      executionDragAprPct: 2,
+      managementFeePct: 1,
+      performanceFeePct: 20,
+      benchmarkAprPct: 4.5,
+      paidSubscribers: 0,
+      monthlySubPriceUsd: 49,
+      x402CallsPerDay: 0,
+      x402PricePerCallUsd: 0.05,
+      monthlyInfraCostUsd: 300,
+    });
+    expect(res.performanceFeeAnnualUsd).toBe(0);
+    expect(res.totalNetMrrUsd).toBeLessThan(0);
+    expect(res.viabilityTag).toBe('BELOW BREAKEVEN');
+    expect(res.breakevenSubscribers).toBeGreaterThan(0);
+  });
+
+  it('calculates zero breakeven subscribers when vault + x402 already covers infra', () => {
+    const res = computeSoloDeskEconomics({
+      managedAumUsd: 500_000,
+      capitalUtilizationPct: 80,
+      liveGrossCarryAprPct: 15,
+      executionDragAprPct: 2,
+      managementFeePct: 1,
+      performanceFeePct: 15,
+      benchmarkAprPct: 4.5,
+      paidSubscribers: 0,
+      monthlySubPriceUsd: 49,
+      x402CallsPerDay: 100,
+      x402PricePerCallUsd: 0.05,
+      monthlyInfraCostUsd: 150,
+    });
+    expect(res.breakevenSubscribers).toBe(0);
+  });
+
+  it('clamps out-of-range utilization and fee percentages cleanly', () => {
+    const res = computeSoloDeskEconomics({
+      managedAumUsd: -100,
+      capitalUtilizationPct: 150,
+      liveGrossCarryAprPct: 10,
+      executionDragAprPct: 1,
+      managementFeePct: 25,
+      performanceFeePct: 90,
+      benchmarkAprPct: 4.5,
+      paidSubscribers: 10,
+      monthlySubPriceUsd: 30,
+      x402CallsPerDay: 0,
+      x402PricePerCallUsd: 0,
+      monthlyInfraCostUsd: 100,
+    });
+    expect(res.deployedCapitalUsd).toBe(0);
+    expect(res.clientNetAprPct).toBe(0);
+    expect(res.subscriptionMrrUsd).toBe(300);
+    expect(res.viabilityTag).toBe('SCALING STAGE');
+  });
+
+  it('generates a deterministic Markdown & JSON operator signal brief from live data', () => {
+    const markets = enrichMarkets(
+      [sampleContract],
+      [{
+        symbol: 'BTC-USD', lastPx: '88000', openPx: '87000', highPx: '89000', lowPx: '86500',
+        volume: '500', quoteVolume: '44000000', vwap: '88000', change: '1000', changePct: 1.15,
+        askPx: '88005', askSz: '5', bidPx: '87995', bidSz: '5', fundingRate: '0.00002', nextFundingTime: 0,
+      }],
+      [{ symbol: 'BTC-USD', openInterest: '300', markPrice: '88040', indexPrice: '88000', fundingRate: '0.00002', nextFundingTime: 0 }],
+      [{ symbol: 'BTC-USD', bidPx: '87995', bidSz: '5', askPx: '88005', askSz: '5' }],
+      [],
+      [],
+    );
+    const brief = generateOperatorSignalBrief(
+      markets,
+      {
+        btcEtfFlowZScore: -1.31,
+        ethEtfFlowZScore: -0.21,
+        marketOverview: { totalMarketCap: 2.05e12, totalMarketCapChangePct: -2.1, totalVolume24h: 74e9, ethGasGwei: 0.2, btcGasSatVb: 0.1, asOf: 0 },
+        hotNews: [{ id: '1', title: 'Live BTC Spot ETF Outflow Catalyst', summary: '', sourceLink: '', releaseTime: 0 }],
+        snapshotFetchedAt: '2026-11-25T00:43:00Z',
+      },
+      'mainnet',
+      3,
+    );
+    expect(brief.topCarrySignals.length).toBe(1);
+    expect(brief.topCarrySignals[0].symbol).toBe('BTC-USD');
+    expect(brief.markdown).toContain('BTC-USD');
+    expect(brief.markdown).toContain('Live BTC Spot ETF Outflow Catalyst');
+    expect(brief.markdown).toContain('-1.31');
   });
 });

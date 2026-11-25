@@ -24,6 +24,11 @@ import type {
   SoSoEtfAsset,
   SoSoEtfDayRow,
   SoSoSsiIndexRow,
+  SoSoValueState,
+  SoloDeskEconomicsInput,
+  SoloDeskEconomicsResult,
+  OperatorSignalBrief,
+  NetworkMode,
   SpotSymbolInfo,
   SpotTicker,
   SsiSectorFundingRow,
@@ -1326,4 +1331,137 @@ export function computeSsiSectorFunding(
       avgBasisBps,
     };
   });
+}
+
+/**
+ * Models a One-Person On-Chain Finance Business (Managed Carry Vault + Paid Signal Subscriptions + x402 API)
+ * anchored strictly to live SoDEX net carry APR with high-water-mark performance fee protection.
+ */
+export function computeSoloDeskEconomics(input: SoloDeskEconomicsInput): SoloDeskEconomicsResult {
+  const aum = Math.max(0, safeNum(input.managedAumUsd));
+  const util = Math.min(100, Math.max(0, safeNum(input.capitalUtilizationPct))) / 100;
+  const deployedCapitalUsd = aum * util;
+
+  const grossCarryApr = safeNum(input.liveGrossCarryAprPct);
+  const execDragApr = Math.max(0, safeNum(input.executionDragAprPct));
+  const netStrategyCarryAprPct = grossCarryApr - execDragApr;
+
+  const grossVaultProfitAnnualUsd = deployedCapitalUsd * (netStrategyCarryAprPct / 100);
+  const mgmtRate = Math.min(10, Math.max(0, safeNum(input.managementFeePct))) / 100;
+  const perfRate = Math.min(50, Math.max(0, safeNum(input.performanceFeePct))) / 100;
+
+  const managementFeeAnnualUsd = aum * mgmtRate;
+  // High-water-mark protection: performance fee is charged strictly on positive net profit after management fee
+  const netProfitBeforePerf = grossVaultProfitAnnualUsd - managementFeeAnnualUsd;
+  const performanceFeeAnnualUsd = netProfitBeforePerf > 0 ? netProfitBeforePerf * perfRate : 0;
+
+  const clientNetProfitAnnualUsd =
+    grossVaultProfitAnnualUsd - managementFeeAnnualUsd - performanceFeeAnnualUsd;
+  const clientNetAprPct = aum > 0 ? (clientNetProfitAnnualUsd / aum) * 100 : 0;
+  const alphaOverBenchmarkPct = clientNetAprPct - safeNum(input.benchmarkAprPct);
+
+  const vaultFeeMrrUsd = (managementFeeAnnualUsd + performanceFeeAnnualUsd) / 12;
+  const subscriptionMrrUsd =
+    Math.max(0, safeNum(input.paidSubscribers)) * Math.max(0, safeNum(input.monthlySubPriceUsd));
+  const x402ApiMrrUsd =
+    Math.max(0, safeNum(input.x402CallsPerDay)) *
+    Math.max(0, safeNum(input.x402PricePerCallUsd)) *
+    30;
+
+  const infra = Math.max(0, safeNum(input.monthlyInfraCostUsd));
+  const totalGrossMrrUsd = vaultFeeMrrUsd + subscriptionMrrUsd + x402ApiMrrUsd;
+  const totalNetMrrUsd = totalGrossMrrUsd - infra;
+  const totalNetArrUsd = totalNetMrrUsd * 12;
+
+  const subPrice = Math.max(0, safeNum(input.monthlySubPriceUsd));
+  const residualCostAfterOtherRev = Math.max(0, infra - vaultFeeMrrUsd - x402ApiMrrUsd);
+  const breakevenSubscribers =
+    subPrice > 0 ? Math.ceil(residualCostAfterOtherRev / subPrice) : 0;
+
+  const viabilityTag: SoloDeskEconomicsResult['viabilityTag'] =
+    totalNetMrrUsd >= 1_500
+      ? 'PROFITABLE SOLO DESK'
+      : totalNetMrrUsd > 0
+        ? 'SCALING STAGE'
+        : 'BELOW BREAKEVEN';
+
+  return {
+    deployedCapitalUsd: Number(deployedCapitalUsd.toFixed(2)),
+    netStrategyCarryAprPct: Number(netStrategyCarryAprPct.toFixed(2)),
+    grossVaultProfitAnnualUsd: Number(grossVaultProfitAnnualUsd.toFixed(2)),
+    managementFeeAnnualUsd: Number(managementFeeAnnualUsd.toFixed(2)),
+    performanceFeeAnnualUsd: Number(performanceFeeAnnualUsd.toFixed(2)),
+    clientNetAprPct: Number(clientNetAprPct.toFixed(2)),
+    alphaOverBenchmarkPct: Number(alphaOverBenchmarkPct.toFixed(2)),
+    subscriptionMrrUsd: Number(subscriptionMrrUsd.toFixed(2)),
+    x402ApiMrrUsd: Number(x402ApiMrrUsd.toFixed(2)),
+    vaultFeeMrrUsd: Number(vaultFeeMrrUsd.toFixed(2)),
+    totalGrossMrrUsd: Number(totalGrossMrrUsd.toFixed(2)),
+    totalNetMrrUsd: Number(totalNetMrrUsd.toFixed(2)),
+    totalNetArrUsd: Number(totalNetArrUsd.toFixed(2)),
+    breakevenSubscribers,
+    viabilityTag,
+  };
+}
+
+/**
+ * Generates a ready-to-publish daily client brief (Markdown + structured JSON)
+ * strictly from live SoDEX carry leaders and live SoSoValue OpenAPI v1 telemetry.
+ */
+export function generateOperatorSignalBrief(
+  markets: EnrichedMarket[],
+  sosoState: Pick<SoSoValueState, 'btcEtfFlowZScore' | 'ethEtfFlowZScore' | 'marketOverview' | 'hotNews' | 'snapshotFetchedAt'>,
+  network: NetworkMode,
+  topN = 5,
+): OperatorSignalBrief {
+  const generatedAtUtc = new Date().toISOString();
+  const top = [...markets]
+    .filter((m) => Number.isFinite(m.annualizedFundingApr) && m.quoteVolume24h > 0)
+    .sort((a, b) => b.conviction.score - a.conviction.score)
+    .slice(0, Math.max(1, topN))
+    .map((m) => ({
+      symbol: m.symbol,
+      direction: m.conviction.direction,
+      convictionScore: m.conviction.score,
+      annualizedFundingApr: Number(m.annualizedFundingApr.toFixed(2)),
+      markIndexBasisBps: Number(m.markIndexBasisBps.toFixed(1)),
+      spotPerpSpreadBps: m.spotPerpSpreadBps !== null ? Number(m.spotPerpSpreadBps.toFixed(1)) : null,
+      markPrice: m.markPrice,
+    }));
+
+  const topHeadlines = (sosoState.hotNews ?? []).slice(0, 3).map((n) => n.title);
+  const mcap = sosoState.marketOverview?.totalMarketCap ?? null;
+
+  const lines: string[] = [
+    `# BasisFlow Daily Carry & ETF Signal Brief (${generatedAtUtc.slice(0, 16).replace('T', ' ')} UTC)`,
+    `- **Venue:** SoDEX ${network.toUpperCase()} (ValueChain L1) + SoSoValue OpenAPI v1`,
+    `- **Institutional Flows:** BTC Spot ETF 30d Z-Score = \`${sosoState.btcEtfFlowZScore.toFixed(2)}\` | ETH Spot ETF 30d Z-Score = \`${sosoState.ethEtfFlowZScore.toFixed(2)}\`${mcap ? ` | Total Crypto MCap = \`$${(mcap / 1e12).toFixed(2)}T\`` : ''}`,
+    '',
+    '## Top Conviction Carry & Basis Signals',
+    '| Symbol | Direction | Score | Funding APR | Mark-Index Basis | Spot-Perp Spread |',
+    '|---|---:|---:|---:|---:|---:|',
+    ...top.map(
+      (r) =>
+        `| **${r.symbol}** | ${r.direction} | ${r.convictionScore}/100 | ${r.annualizedFundingApr >= 0 ? '+' : ''}${r.annualizedFundingApr.toFixed(2)}% | ${r.markIndexBasisBps.toFixed(1)} bps | ${r.spotPerpSpreadBps !== null ? `${r.spotPerpSpreadBps.toFixed(1)} bps` : 'Perp-only'} |`,
+    ),
+  ];
+
+  if (topHeadlines.length > 0) {
+    lines.push('', '## SoSoValue Macro & News Catalysts', ...topHeadlines.map((h) => `- ${h}`));
+  }
+  lines.push(
+    '',
+    '_Generated deterministically by BasisFlow Terminal v1.5.0 — non-custodial analytics, verify L2 slippage before execution._',
+  );
+
+  return {
+    generatedAtUtc,
+    network,
+    topCarrySignals: top,
+    btcEtfFlowZScore: sosoState.btcEtfFlowZScore,
+    ethEtfFlowZScore: sosoState.ethEtfFlowZScore,
+    marketCapUsd: mcap,
+    topHeadlines,
+    markdown: lines.join('\n'),
+  };
 }

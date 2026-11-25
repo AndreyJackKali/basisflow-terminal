@@ -9,7 +9,7 @@ import {
   Power,
   Trash2,
 } from 'lucide-react';
-import type { EnrichedMarket, KlineBar, NetworkMode, OrderbookData, PaperTrade } from '../types';
+import type { EnrichedMarket, KlineBar, NetworkMode, OrderbookData, PaperTrade, SoSoValueState } from '../types';
 import {
   buildCounterfactualCurves,
   evaluatePreTradeRisk,
@@ -19,6 +19,7 @@ import { NETWORK_CONFIG } from '../lib/api';
 import { CounterfactualChart } from './Charts';
 import { DeltaNeutralHedgeCard } from './DeltaNeutralHedgeCard';
 import { MonteCarloStressCard } from './MonteCarloStressCard';
+import { SoloDeskBusinessCard } from './SoloDeskBusinessCard';
 
 interface Props {
   network: NetworkMode;
@@ -28,6 +29,7 @@ interface Props {
   orderbook: OrderbookData | null;
   spotOrderbook: OrderbookData | null;
   klines: KlineBar[];
+  sosoState: SoSoValueState;
   killSwitch: boolean;
   onToggleKillSwitch: () => void;
   paperTrades: PaperTrade[];
@@ -44,6 +46,7 @@ export const ExecutionTab: React.FC<Props> = ({
   orderbook,
   spotOrderbook,
   klines,
+  sosoState,
   killSwitch,
   onToggleKillSwitch,
   paperTrades,
@@ -538,6 +541,9 @@ export const ExecutionTab: React.FC<Props> = ({
           <CounterfactualChart points={counterfactualPts} />
         </div>
       </div>
+
+      {/* v1.5.0 One-Person On-Chain Finance Business Desk */}
+      <SoloDeskBusinessCard network={network} markets={markets} sosoState={sosoState} />
     </div>
   );
 };
