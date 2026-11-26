@@ -1,4 +1,4 @@
-# BasisFlow Terminal (v1.5.1)
+# BasisFlow Terminal (v1.5.2)
 
 **Institutional Funding-Basis, 500ms Live WebSocket L2 Microstructure, Delta-Neutral Hedge Builder, Empirical Bootstrap Monte Carlo Risk Desk, One-Person Finance Business Monetization & Live SoSoValue OpenAPI v1 Intelligence**  
 Built for **SoSoValue × ValueChain × SoDEX WaveHack (Wave 3)**
@@ -88,7 +88,7 @@ Solo on-chain traders operating across **SoDEX's 107 perpetual markets and 48 sp
 
 ```bash
 npm install
-npm test                    # 24/24 Vitest unit tests (funding APR, basis bps, L2 slippage, regime, fail-closed risk gates, 2-leg delta-neutral carry, WS parser, Monte Carlo VaR/CVaR, CSV export, SoSoValue ETF Z-score, ETF/SSI cross-check & Solo Desk unit economics/x402 brief)
+npm test                    # 25/25 Vitest unit tests (funding APR, basis bps, L2 slippage, regime, fail-closed risk gates, 2-leg delta-neutral carry, WS parser, Monte Carlo VaR/CVaR, CSV export, SoSoValue ETF Z-score, ETF/SSI cross-check, data-quality gates & Solo Desk unit economics/x402 brief)
 npm run verify:sodex        # 14/14 live REST, ValueChain RPC & 500ms WebSocket l2Book endpoints verified (zero auth required)
 npm run verify:soso         # Verifies SoSoValue OpenAPI v1 CORS & auth contract (pass SOSO_API_KEY=... for 7/7 live 200 OK)
 SOSO_API_KEY=... npm run soso:proxy     # Starts zero-dep CORS/cached/rate-limited SoSoValue proxy on http://127.0.0.1:9105

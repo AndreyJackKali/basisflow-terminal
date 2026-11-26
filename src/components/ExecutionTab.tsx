@@ -502,9 +502,11 @@ export const ExecutionTab: React.FC<Props> = ({
                             {t.side} {t.leverage}x
                           </span>
                         </td>
-                        <td className="py-2 text-right text-slate-300">${t.entryPrice.toFixed(2)}</td>
+                        <td className="py-2 text-right text-slate-300">
+                          ${t.entryPrice.toFixed(t.entryPrice < 1 ? 4 : 2)}
+                        </td>
                         <td className="py-2 text-right text-slate-200">
-                          ${(t.exitPrice ?? liveMark).toFixed(2)}
+                          ${(t.exitPrice ?? liveMark).toFixed((t.exitPrice ?? liveMark) < 1 ? 4 : 2)}
                         </td>
                         <td className="py-2 text-right text-slate-300">${t.notionalUsd.toFixed(0)}</td>
                         <td className={`py-2 text-right font-semibold ${pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>

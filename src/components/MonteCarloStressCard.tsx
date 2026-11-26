@@ -92,7 +92,7 @@ export const MonteCarloStressCard: React.FC<Props> = ({
   const handleExportAuditJson = () => {
     const report = {
       generatedAtUtc: new Date().toISOString(),
-      terminal: 'BasisFlow Terminal v1.2.0',
+      terminal: 'BasisFlow Terminal v1.5.2',
       symbol: market.symbol,
       side,
       accountEquityUsd: equity,

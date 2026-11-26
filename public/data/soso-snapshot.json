@@ -1,19 +1,33 @@
 {
   "schemaVersion": "1.3.0",
   "source": "SoSoValue OpenAPI v1 (Live Verified Snapshot)",
-  "fetchedAt": "2026-11-25T00:43:21.820Z",
-  "fetchedDateUtc": "2026-11-25",
+  "fetchedAt": "2026-11-26T08:02:17.212Z",
+  "fetchedDateUtc": "2026-11-26",
   "endpointsVerified": 24,
   "marketOverview": {
-    "totalMarketCap": 2043028523717.5557,
-    "totalMarketCapChangePct": -2.38226619,
-    "totalVolume24h": 73102789248.37,
-    "ethGasGwei": 0.145570997,
+    "totalMarketCap": 2074094526412.9897,
+    "totalMarketCapChangePct": 2.60330035,
+    "totalVolume24h": 85157184133.74,
+    "ethGasGwei": 0.05898281,
     "btcGasSatVb": 1.01,
-    "asOf": 1795567397952
+    "asOf": 1795680134529
   },
   "etfFlows": {
     "BTC": [
+      {
+        "date": "2026-11-25",
+        "totalNetInflow": -453119620.9600002,
+        "totalValueTraded": 3092525408.1,
+        "totalNetAssets": 72026690545.29016,
+        "cumNetInflow": 51588959440.077995
+      },
+      {
+        "date": "2026-11-24",
+        "totalNetInflow": -231556490.06999975,
+        "totalValueTraded": 2499017019.7,
+        "totalNetAssets": 72009917872.68272,
+        "cumNetInflow": 52042079061.038
+      },
       {
         "date": "2026-11-23",
         "totalNetInflow": -569739636.2999997,
@@ -153,16 +167,23 @@
         "totalValueTraded": 1575156229.7,
         "totalNetAssets": 103943311408.8796,
         "cumNetInflow": 57469201795.088
-      },
-      {
-        "date": "2026-10-26",
-        "totalNetInflow": 110344120,
-        "totalValueTraded": 1863077616.9,
-        "totalNetAssets": 102839745964.24516,
-        "cumNetInflow": 57293208418.088
       }
     ],
     "ETH": [
+      {
+        "date": "2026-11-25",
+        "totalNetInflow": -68510462.4,
+        "totalValueTraded": 599273373.1,
+        "totalNetAssets": 8868472743.50004,
+        "cumNetInflow": 10991908549.12085
+      },
+      {
+        "date": "2026-11-24",
+        "totalNetInflow": -64024937.8,
+        "totalValueTraded": 425004377.3,
+        "totalNetAssets": 8870809477.9078,
+        "cumNetInflow": 11060419011.52085
+      },
       {
         "date": "2026-11-23",
         "totalNetInflow": -84963312.735,
@@ -309,16 +330,23 @@
         "totalValueTraded": 392325416.5,
         "totalNetAssets": 14184192243.5958,
         "cumNetInflow": 12570443702.77085
-      },
-      {
-        "date": "2026-10-26",
-        "totalNetInflow": -88576872,
-        "totalValueTraded": 506234687.4,
-        "totalNetAssets": 14066650049.23684,
-        "cumNetInflow": 12630661507.59585
       }
     ],
     "SOL": [
+      {
+        "date": "2026-11-25",
+        "totalNetInflow": 0,
+        "totalValueTraded": 35535098.59,
+        "totalNetAssets": 1000173681.837,
+        "cumNetInflow": 1411664080.049
+      },
+      {
+        "date": "2026-11-24",
+        "totalNetInflow": 749629.36,
+        "totalValueTraded": 36442428.65,
+        "totalNetAssets": 981728502.8980001,
+        "cumNetInflow": 1411664080.049
+      },
       {
         "date": "2026-11-23",
         "totalNetInflow": -3828019,
@@ -409,23 +437,23 @@
         "totalValueTraded": 57287532.62,
         "totalNetAssets": 1332537763.2319999,
         "cumNetInflow": 1467491189.099
-      },
-      {
-        "date": "2026-11-04",
-        "totalNetInflow": 0,
-        "totalValueTraded": 40130091.16,
-        "totalNetAssets": 1404963826.1039999,
-        "cumNetInflow": 1468667266.299
-      },
-      {
-        "date": "2026-11-03",
-        "totalNetInflow": 0,
-        "totalValueTraded": 26536540.05,
-        "totalNetAssets": 1384620883.826,
-        "cumNetInflow": 1468667266.299
       }
     ],
     "XRP": [
+      {
+        "date": "2026-11-25",
+        "totalNetInflow": 4067889.6,
+        "totalValueTraded": 33400346.31,
+        "totalNetAssets": 1043664104.17,
+        "cumNetInflow": 1779574344.54
+      },
+      {
+        "date": "2026-11-24",
+        "totalNetInflow": 0,
+        "totalValueTraded": 20808949.88,
+        "totalNetAssets": 1017973113.54,
+        "cumNetInflow": 1775506454.94
+      },
       {
         "date": "2026-11-23",
         "totalNetInflow": -2489950,
@@ -516,20 +544,6 @@
         "totalValueTraded": 22300189.11,
         "totalNetAssets": 1413226369.07,
         "cumNetInflow": 1808229752.65
-      },
-      {
-        "date": "2026-11-04",
-        "totalNetInflow": 0,
-        "totalValueTraded": 23098555.95,
-        "totalNetAssets": 1485734067.39,
-        "cumNetInflow": 1808229752.65
-      },
-      {
-        "date": "2026-11-03",
-        "totalNetInflow": 0,
-        "totalValueTraded": 14045176.9,
-        "totalNetAssets": 1456327568.1,
-        "cumNetInflow": 1808229752.65
       }
     ]
   },
@@ -595,18 +609,18 @@
       "exchange": "NYSE"
     }
   ],
-  "btcEtfFlowZScore": -1.31,
-  "ethEtfFlowZScore": -0.21,
+  "btcEtfFlowZScore": -0.8,
+  "ethEtfFlowZScore": 0.05,
   "ssiIndices": [
     {
       "ticker": "ssiDeFi",
-      "price": 5.815820998118,
-      "changePct24h": -0.048,
-      "roi7d": -0.1905,
-      "roi1m": -0.3011,
-      "roi3m": -0.1624,
-      "roi1y": -0.1197,
-      "ytd": 0.1149,
+      "price": 6.006127884876,
+      "changePct24h": 0.0489,
+      "roi7d": -0.164,
+      "roi1m": -0.2782,
+      "roi3m": -0.1349,
+      "roi1y": -0.0909,
+      "ytd": 0.1514,
       "constituents": [
         {
           "symbol": "pancakeswap",
@@ -652,53 +666,53 @@
     },
     {
       "ticker": "ssiAI",
-      "price": 3.360735556576,
-      "changePct24h": -0.045,
-      "roi7d": -0.0505,
-      "roi1m": -0.2511,
-      "roi3m": -0.048,
-      "roi1y": -0.498,
-      "ytd": -0.2577
+      "price": 3.644905338938,
+      "changePct24h": 0.1028,
+      "roi7d": 0.0298,
+      "roi1m": -0.1877,
+      "roi3m": 0.0325,
+      "roi1y": -0.4555,
+      "ytd": -0.1949
     },
     {
       "ticker": "ssiRWA",
-      "price": 3.497040814544,
-      "changePct24h": -0.0179,
-      "roi7d": -0.2559,
-      "roi1m": -0.3975,
-      "roi3m": -0.2797,
-      "roi1y": -0.433,
-      "ytd": -0.2983
+      "price": 3.586883510239,
+      "changePct24h": 0.0504,
+      "roi7d": -0.2368,
+      "roi1m": -0.382,
+      "roi3m": -0.2612,
+      "roi1y": -0.4185,
+      "ytd": -0.2803
     },
     {
       "ticker": "ssiCeFi",
-      "price": 17.099245409101,
-      "changePct24h": -0.0224,
-      "roi7d": -0.1947,
-      "roi1m": -0.2576,
-      "roi3m": -0.1745,
-      "roi1y": -0.4361,
-      "ytd": -0.3822
+      "price": 17.372547119,
+      "changePct24h": 0.0288,
+      "roi7d": -0.1819,
+      "roi1m": -0.2457,
+      "roi3m": -0.1614,
+      "roi1y": -0.4271,
+      "ytd": -0.3723
     },
     {
       "ticker": "ssiLayer1",
-      "price": 7.391109413433,
-      "changePct24h": -0.0248,
-      "roi7d": -0.1764,
-      "roi1m": -0.2853,
-      "roi3m": -0.2346,
-      "roi1y": -0.4332,
-      "ytd": -0.3863
+      "price": 7.488594475063,
+      "changePct24h": 0.0294,
+      "roi7d": -0.1656,
+      "roi1m": -0.2758,
+      "roi3m": -0.2245,
+      "roi1y": -0.4257,
+      "ytd": -0.3782
     },
     {
       "ticker": "ssiMAG7",
-      "price": 10.52222612867,
-      "changePct24h": -0.0261,
-      "roi7d": -0.1906,
-      "roi1m": -0.2788,
-      "roi3m": -0.2019,
-      "roi1y": -0.477,
-      "ytd": -0.4022,
+      "price": 10.701142542414,
+      "changePct24h": 0.032,
+      "roi7d": -0.1769,
+      "roi1m": -0.2665,
+      "roi3m": -0.1883,
+      "roi1y": -0.4681,
+      "ytd": -0.392,
       "constituents": [
         {
           "symbol": "solana",
@@ -732,131 +746,131 @@
     },
     {
       "ticker": "ssiSocialFi",
-      "price": 3.658695289666,
-      "changePct24h": -0.0605,
-      "roi7d": -0.2135,
-      "roi1m": -0.327,
-      "roi3m": -0.3388,
-      "roi1y": -0.4767,
-      "ytd": -0.4487
+      "price": 3.828121010084,
+      "changePct24h": 0.0411,
+      "roi7d": -0.1771,
+      "roi1m": -0.2958,
+      "roi3m": -0.3082,
+      "roi1y": -0.4524,
+      "ytd": -0.4232
     },
     {
       "ticker": "ssiDePIN",
-      "price": 1.269418591112,
-      "changePct24h": -0.0413,
-      "roi7d": -0.2104,
-      "roi1m": -0.3708,
-      "roi3m": -0.1326,
-      "roi1y": -0.6753,
-      "ytd": -0.4857
+      "price": 1.307707244631,
+      "changePct24h": 0.0419,
+      "roi7d": -0.1866,
+      "roi1m": -0.3519,
+      "roi3m": -0.1064,
+      "roi1y": -0.6655,
+      "ytd": -0.4702
     },
     {
       "ticker": "ssiMeme",
-      "price": 4.787936478064,
-      "changePct24h": -0.0292,
-      "roi7d": -0.2073,
-      "roi1m": -0.3148,
-      "roi3m": -0.2904,
-      "roi1y": -0.6316,
-      "ytd": -0.5025
+      "price": 4.940179784983,
+      "changePct24h": 0.0422,
+      "roi7d": -0.1821,
+      "roi1m": -0.293,
+      "roi3m": -0.2679,
+      "roi1y": -0.6199,
+      "ytd": -0.4867
     },
     {
       "ticker": "ssiPayFi",
-      "price": 12.063621264919,
-      "changePct24h": -0.0253,
-      "roi7d": -0.1292,
-      "roi1m": -0.294,
-      "roi3m": -0.2628,
-      "roi1y": -0.5832,
-      "ytd": -0.5074
+      "price": 12.521150287998,
+      "changePct24h": 0.0469,
+      "roi7d": -0.0962,
+      "roi1m": -0.2673,
+      "roi3m": -0.2348,
+      "roi1y": -0.5674,
+      "ytd": -0.4887
     },
     {
       "ticker": "ssiLayer2",
-      "price": 0.517784646849,
-      "changePct24h": -0.0464,
-      "roi7d": -0.1918,
-      "roi1m": -0.3508,
-      "roi3m": -0.0835,
-      "roi1y": -0.6597,
-      "ytd": -0.5246
-    },
-    {
-      "ticker": "ssiGameFi",
-      "price": 0.664668537978,
-      "changePct24h": -0.0313,
-      "roi7d": -0.1911,
-      "roi1m": -0.2925,
-      "roi3m": -0.1461,
-      "roi1y": -0.695,
-      "ytd": -0.5442
+      "price": 0.536950368971,
+      "changePct24h": 0.0412,
+      "roi7d": -0.1618,
+      "roi1m": -0.3268,
+      "roi3m": -0.0496,
+      "roi1y": -0.6471,
+      "ytd": -0.507
     },
     {
       "ticker": "ssiNFT",
-      "price": 1.365034100505,
-      "changePct24h": -0.0406,
-      "roi7d": -0.2582,
-      "roi1m": -0.4043,
-      "roi3m": -0.3558,
-      "roi1y": -0.6751,
-      "ytd": -0.5526
+      "price": 1.42404199904,
+      "changePct24h": 0.0399,
+      "roi7d": -0.2262,
+      "roi1m": -0.3786,
+      "roi3m": -0.3279,
+      "roi1y": -0.661,
+      "ytd": -0.5333
+    },
+    {
+      "ticker": "ssiGameFi",
+      "price": 0.678471105838,
+      "changePct24h": 0.0181,
+      "roi7d": -0.1743,
+      "roi1m": -0.2778,
+      "roi3m": -0.1284,
+      "roi1y": -0.6887,
+      "ytd": -0.5348
     }
   ],
   "hotNews": [
     {
-      "id": "2125249361209987073",
-      "title": "Coinkite releases post-mortem on COLDCARD seed generation flaw",
-      "summary": "Bitcoin hardware wallet manufacturer Coinkite has today released a full retrospective on the COLDCARD seed generation flaw. The company stated that all thefts were carried out by offline regeneration of affected private ",
-      "sourceLink": "https://sosovalue.com/hot/2125249361209987073?from=888001",
-      "releaseTime": 1795533708000
+      "id": "2125757275203133441",
+      "title": "Bitcoin Spot ETF saw a total net outflow of 453.12M USD yesterday, marking a 7 days of consistent outflow",
+      "summary": "<p>According to SoSoValue data, Bitcoin spot ETF saw a total net outflow of 453.12M USD yesterday (Eastern Time, November 25th).</p><br><p>The Bitcoin Spot ETF with the highest net outflow yesterday was BlackRock's ETF I",
+      "sourceLink": "https://sosovalue.com/hot/2125757275203133441?from=888001",
+      "releaseTime": 1795669194148
     },
     {
-      "id": "2125248259455279106",
-      "title": "Anchorage Digital plans to establish an asset management subsidiary and launch a bitcoin-denominated fund\n",
-      "summary": "Anchorage Digital plans to establish an asset management subsidiary and launch a bitcoin-denominated fund.\n\n[Odaily]",
-      "sourceLink": "https://sosovalue.com/hot/2125248259455279106?from=888001",
-      "releaseTime": 1795533491000
+      "id": "2125780133789392897",
+      "title": "LayerZero adds Samsung Pay, Kakao Pay, and ZAN to the Zero Genesis Validators",
+      "summary": "LayerZero has announced that Kakao Pay, Samsung Card, and ZAN have been listed as genesis validators of Layer 1 blockchain Zero. The three will participate in network consensus and proof validation during the mainnet lau",
+      "sourceLink": "https://sosovalue.com/hot/2125780133789392897?from=888001",
+      "releaseTime": 1795660233000
     },
     {
-      "id": "2125214873283420162",
-      "title": "Beosin's parent company, Lianan Technology, has completed a strategic financing of tens of millions of yuan, with the Shanghai Blockchain Innovation Fund participating in the investment.",
-      "summary": "Beosin's parent company, Chengdu ChainSafe Technology Co., Ltd., announced the completion of a new round of strategic financing worth several million yuan. The sole investor in this round is the Shanghai Blockchain Innov",
-      "sourceLink": "https://sosovalue.com/hot/2125214873283420162?from=888001",
-      "releaseTime": 1795525362000
+      "id": "2125764578518196225",
+      "title": "After the Democrats take over in January next year, they will investigate Trump's meme coin and other cryptocurrency ventures\n",
+      "summary": "Representative Maxine Waters said the first crypto bill that must be passed by the House Committee on Financial Services is to stop corruption in the crypto field by Trump. Responding to Trump's recent TRUMP meme coin di",
+      "sourceLink": "https://sosovalue.com/hot/2125764578518196225?from=888001",
+      "releaseTime": 1795656360000
     },
     {
-      "id": "2125296190609952769",
-      "title": "SEC staff no-action letter, Molecule's unregistered token issuance not recommended for enforcement\n",
-      "summary": "SEC staff has issued a no-action letter to the biotech platform Molecule.\n\nAccording to the facts stated in Molecule’s application, holders can lock the functional tokens they claim to have to cast advisory votes on rese",
-      "sourceLink": "https://sosovalue.com/hot/2125296190609952769?from=888001",
-      "releaseTime": 1795544872000
+      "id": "2125661038864982017",
+      "title": "Valued at approximately 5,477 times the original ICO valuation, a whale has sold another 22 thousand ETH, worth $37.38 million\n",
+      "summary": "A whale purchased 100 thousand ETH at $0.31 per token during the 2014 ICO, with a total cost of approximately $31 thousand. The whale then sold another 22 thousand ETH via Binance and Bybit, valued at approximately $37.3",
+      "sourceLink": "https://sosovalue.com/hot/2125661038864982017?from=888001",
+      "releaseTime": 1795631813000
     },
     {
-      "id": "2125225886905217025",
-      "title": "$40 million to $50 million buyback proposal for SKY, Sky aims to ease stUSDS withdrawal difficulties\n",
-      "summary": "A lender in the Sky Protocol stUSDS pool has proposed using $40 million to $50 million of reserve funds to repurchase SKY off-market from borrowers, freeing up capital for withdrawals by depositors. The USDS obtained fro",
-      "sourceLink": "https://sosovalue.com/hot/2125225886905217025?from=888001",
-      "releaseTime": 1795528033000
+      "id": "2125859814864850946",
+      "title": "All liquidated, the ancient ICO whale from 2015 sold 45 thousand ETH today, worth $75.35 million\n",
+      "summary": "An ancient whale address that subscribed to 100 thousand ETH in the 2015 ICO (0xEba...67f5) sold 45 thousand ETH today, worth $75.35 million, and has now fully exited.\n\nThat address previously sold 50 thousand ETH in 201",
+      "sourceLink": "https://sosovalue.com/hot/2125859814864850946?from=888001",
+      "releaseTime": 1795679230000
     },
     {
-      "id": "2125259206175174658",
-      "title": "Sources: Jensen Huang said Nvidia does not need a succession plan, promising to do better in his second tenure as CEO.\n",
-      "summary": "Nvidia CEO Jensen Huang publicly apologized to employees at the first all-hands meeting after his reinstatement, admitting to violating the company’s code of conduct and revealing that he receives one and a half hours of",
-      "sourceLink": "https://sosovalue.com/hot/2125259206175174658?from=888001",
-      "releaseTime": 1795565798000
+      "id": "2125747882692665345",
+      "title": "Sky has proposed an emergency plan to transfer 25 million USDS to the foundation to repay debt",
+      "summary": "On November 26, Sky's core promoters proposed an unscheduled emergency execution vote on November 25, intending to transfer 25 million USDS to the Sky Frontier Foundation to repay debt. The statement noted that this fund",
+      "sourceLink": "https://sosovalue.com/hot/2125747882692665345?from=888001",
+      "releaseTime": 1795652433000
     },
     {
-      "id": "2125232225188057089",
-      "title": "The Trump administration plans to restart its tariff offensive, with related decisions expected to be announced as early as Tuesday.\n",
-      "summary": "The United States is preparing to announce as early as Tuesday an increase in tariffs on goods from the European Union and more than a dozen other economies. The Trump administration is seeking to replace the tariffs tha",
-      "sourceLink": "https://sosovalue.com/hot/2125232225188057089?from=888001",
-      "releaseTime": 1795529598000
+      "id": "2125702773215072258",
+      "title": "Van Hollen and Warren urge SEC to withdraw proposed crypto rules",
+      "summary": "On November 26, according to The Block, Senators Chris Van Hollen and Elizabeth Warren sent two letters. The two urged SEC Chair Paul Atkins to withdraw the related proposed rules. These rules concern how crypto projects",
+      "sourceLink": "https://sosovalue.com/hot/2125702773215072258?from=888001",
+      "releaseTime": 1795641771000
     },
     {
-      "id": "2125375355241631745",
-      "title": "Abraxas Capital liquidates all Hyperliquid positions and withdraws remaining funds",
-      "summary": "According to Mlm onchain monitoring, Abraxas Capital has closed out all of its positions on Hyperliquid and withdrawn the remaining funds.\n\nThe firm traded on the platform for nearly two years, with cumulative trading vo",
-      "sourceLink": "https://sosovalue.com/hot/2125375355241631745?from=888001",
-      "releaseTime": 1795563776000
+      "id": "2125710210989502465",
+      "title": "Swiss crypto tax data will start being collected as early as 2027, and the first round of cross-border exchanges is scheduled for 2028\n",
+      "summary": "The Swiss Federal Council has approved 57 potential cooperating jurisdictions, with plans to launch automatic information exchange on digital assets starting in 2028. Cryptocurrency service providers may begin collecting",
+      "sourceLink": "https://sosovalue.com/hot/2125710210989502465?from=888001",
+      "releaseTime": 1795643707000
     }
   ],
   "treasuries": [

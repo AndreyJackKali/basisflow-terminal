@@ -1478,7 +1478,7 @@ export function generateOperatorSignalBrief(
   }
   lines.push(
     '',
-    '_Generated deterministically by BasisFlow Terminal v1.5.0 — non-custodial analytics, verify L2 slippage before execution._',
+    '_Generated deterministically by BasisFlow Terminal v1.5.2 — non-custodial analytics, verify L2 slippage before execution._',
   );
 
   return {
