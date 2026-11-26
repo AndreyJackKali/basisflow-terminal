@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Briefcase, CheckCircle2, Copy, Download, Radio } from 'lucide-react';
 import type { EnrichedMarket, NetworkMode, SoSoValueState } from '../types';
-import { computeSoloDeskEconomics, generateOperatorSignalBrief } from '../lib/quant';
+import { computeSoloDeskEconomics, generateOperatorSignalBrief, THIN_BOOK_USD } from '../lib/quant';
 
 interface Props {
   network: NetworkMode;
@@ -24,7 +24,7 @@ export const SoloDeskBusinessCard: React.FC<Props> = ({ network, markets, sosoSt
   // Derive realistic live carry APR strictly from top 5 liquid SoDEX carry markets (absolute carry capture)
   const liveBasketCarryApr = useMemo(() => {
     const liquid = [...markets]
-      .filter((m) => m.quoteVolume24h >= 100_000 && Number.isFinite(m.annualizedFundingApr))
+      .filter((m) => m.quoteVolume24h >= THIN_BOOK_USD && Number.isFinite(m.annualizedFundingApr))
       .sort((a, b) => Math.abs(b.annualizedFundingApr) - Math.abs(a.annualizedFundingApr))
       .slice(0, 5);
     if (liquid.length === 0) return 0;

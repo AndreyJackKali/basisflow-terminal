@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { ArrowUpDown, Download, Search, TrendingUp, Layers, ShieldCheck, Activity } from 'lucide-react';
 import type { EnrichedMarket } from '../types';
-import { serializeMarketsToCsv, THIN_BOOK_USD } from '../lib/quant';
+import { serializeMarketsToCsv, THIN_BOOK_USD, THIN_BOOK_LABEL } from '../lib/quant';
 
 interface Props {
   markets: EnrichedMarket[];
@@ -124,7 +124,7 @@ export const ScannerTab: React.FC<Props> = ({
 
         <div className="bg-[#0e1522] border border-slate-800/90 rounded-lg p-3.5">
           <div className="flex items-center justify-between text-xs text-slate-400">
-            <span title={`Largest |funding APR| among markets with >= $${THIN_BOOK_USD / 1000}k 24h volume`}>Peak Tradable Carry</span>
+            <span title={`Largest |funding APR| among markets with >= ${THIN_BOOK_LABEL} 24h volume`}>Peak Tradable Carry</span>
             <TrendingUp className="w-3.5 h-3.5 text-amber-400" />
           </div>
           <div className="text-xl font-mono font-bold text-amber-300 mt-1">
@@ -134,7 +134,7 @@ export const ScannerTab: React.FC<Props> = ({
           </div>
           <div className="text-[11px] text-slate-400 mt-0.5">
             {stats.topCarry
-              ? `${stats.topCarry.symbol} · ${stats.topCarry.annualizedFundingApr >= 0 ? 'longs pay shorts' : 'shorts pay longs'} · ≥$${THIN_BOOK_USD / 1000}k vol`
+              ? `${stats.topCarry.symbol} · ${stats.topCarry.annualizedFundingApr >= 0 ? 'longs pay shorts' : 'shorts pay longs'} · ≥${THIN_BOOK_LABEL} vol`
               : 'Loading...'}
           </div>
         </div>

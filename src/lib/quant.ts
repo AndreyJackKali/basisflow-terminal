@@ -110,7 +110,9 @@ export function normalizeSpotBase(baseCoin: string): string {
 }
 
 /** Markets with less than this 24h quote volume are flagged THIN_BOOK and their conviction score is capped. */
-export const THIN_BOOK_USD = 100_000;
+export const THIN_BOOK_USD = 1_000_000;
+/** Human label for THIN_BOOK_USD, e.g. "$1M". */
+export const THIN_BOOK_LABEL = THIN_BOOK_USD >= 1_000_000 ? `$${THIN_BOOK_USD / 1_000_000}M` : `$${THIN_BOOK_USD / 1000}k`;
 /** Spot↔Perp gaps wider than this are treated as a stale / illiquid spot print, not a tradable basis. */
 export const STALE_BASIS_BPS = 1500;
 /** Conviction cap applied to THIN_BOOK markets so headline ranks favour executable size. */
@@ -262,7 +264,7 @@ export function enrichMarkets(
     }
     if (thinBook) {
       qualityFlags.push('THIN_BOOK');
-      rationale += ` Thin book ($${(m.quoteVolume24h / 1000).toFixed(0)}k 24h vol < $${THIN_BOOK_USD / 1000}k): size-limited, conviction capped at ${THIN_BOOK_SCORE_CAP}.`;
+      rationale += ` Thin book ($${(m.quoteVolume24h / 1000).toFixed(0)}k 24h vol < ${THIN_BOOK_LABEL}): size-limited, conviction capped at ${THIN_BOOK_SCORE_CAP}.`;
     }
 
     const conviction: ConvictionBreakdown = {
