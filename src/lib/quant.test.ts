@@ -1,4 +1,6 @@
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   buildCounterfactualCurves,
   buildEtfFundingCrossChecks,
@@ -6,6 +8,7 @@ import {
   computeAnnualizedFundingApr,
   computeBasisBps,
   computeBidAskSpreadBps,
+  computeCarryStressScenario,
   computeDeltaNeutralCarry,
   computeEtfFlowStats,
   computeOrderbookImbalance,
@@ -17,9 +20,11 @@ import {
   evaluatePreTradeRisk,
   generateOperatorSignalBrief,
   runLiveBootstrapMonteCarlo,
+  serializeCarryTicketCsv,
   serializeMarketsToCsv,
   simulateOrderbookSlippage,
   STALE_BASIS_BPS,
+  summarizeQualityAlerts,
   THIN_BOOK_SCORE_CAP,
   THIN_BOOK_USD,
 } from './quant';
@@ -747,5 +752,356 @@ describe('BasisFlow Quant Engine', () => {
     expect(brief.markdown).toContain('BTC-USD');
     expect(brief.markdown).toContain('Live BTC Spot ETF Outflow Catalyst');
     expect(brief.markdown).toContain('-1.31');
+  });
+});
+
+describe('v1.6.0 Carry-Trade Stress Simulator, Quality Alerts & Zero-Leak Snapshot', () => {
+  const makeLiquidBtc = (fundingRate = '0.00004', quoteVolume = '44000000', spread = 2): EnrichedMarket =>
+    enrichMarkets(
+      [sampleContract],
+      [{
+        symbol: 'BTC-USD', lastPx: '88000', openPx: '87000', highPx: '89000', lowPx: '86500',
+        volume: '500', quoteVolume, vwap: '88000', change: '1000', changePct: 1.15,
+        askPx: String(88000 * (1 + spread / 20_000)), askSz: '5',
+        bidPx: String(88000 * (1 - spread / 20_000)), bidSz: '5',
+        fundingRate, nextFundingTime: 0,
+      }],
+      [{ symbol: 'BTC-USD', openInterest: '300', markPrice: '88000', indexPrice: '87980', fundingRate, nextFundingTime: 0 }],
+      [{
+        symbol: 'BTC-USD',
+        bidPx: String(88000 * (1 - spread / 20_000)), bidSz: '5',
+        askPx: String(88000 * (1 + spread / 20_000)), askSz: '5',
+      }],
+      [],
+      [],
+    )[0];
+
+  const sampleEtfOutflows = {
+    BTC: [
+      { date: '2026-11-25', totalNetInflow: -450_000_000, totalValueTraded: 3e9, totalNetAssets: 72e9, cumNetInflow: 51e9 },
+      { date: '2026-11-24', totalNetInflow: -230_000_000, totalValueTraded: 2.5e9, totalNetAssets: 72.4e9, cumNetInflow: 51.5e9 },
+      { date: '2026-11-23', totalNetInflow: -310_000_000, totalValueTraded: 2.8e9, totalNetAssets: 73e9, cumNetInflow: 51.8e9 },
+      { date: '2026-11-20', totalNetInflow: 80_000_000, totalValueTraded: 2.2e9, totalNetAssets: 73.5e9, cumNetInflow: 52e9 },
+      { date: '2026-11-19', totalNetInflow: 110_000_000, totalValueTraded: 2.1e9, totalNetAssets: 73.4e9, cumNetInflow: 51.9e9 },
+    ],
+    ETH: [],
+    SOL: [],
+    XRP: [],
+  };
+
+  it('computes net carry APY, ROE, break-even days, and liquidation buffer accurately', () => {
+    // 0.00004/hr * 8760 = 35.04% gross APR; 25% decay => 26.28% decayed APR
+    const btc = makeLiquidBtc('0.00004');
+    const res = computeCarryStressScenario({
+      market: btc,
+      notionalUsd: 60_000,
+      leverage: 3,
+      holdingDays: 30,
+      feeSlippageBps: 12,
+      borrowCostAprPct: 4.5,
+      fundingDecayPct: 25,
+      side: 'SHORT_PERP',
+      etfFlows: sampleEtfOutflows,
+    });
+
+    expect(res.collateralUsd).toBe(20_000);
+    expect(res.grossFundingAprPct).toBeCloseTo(35.04, 1);
+    expect(res.decayedFundingAprPct).toBeCloseTo(26.28, 1);
+    expect(res.executionCostUsd).toBeCloseTo(72, 1);
+    expect(res.netCarryUsd).toBeGreaterThan(950);
+    expect(res.netApyOnNotionalPct).toBeGreaterThan(19);
+    expect(res.netRoeAnnualizedPct).toBeCloseTo(res.netApyOnNotionalPct * 3, 0);
+    expect(res.breakEvenDays).not.toBeNull();
+    expect(res.breakEvenDays!).toBeGreaterThan(1);
+    expect(res.breakEvenDays!).toBeLessThan(5);
+    // 3x leverage, MMR=0.025 => buffer = (1/3 - 0.025)*100 = 30.83%
+    expect(res.liquidationBufferPct).toBeCloseTo(30.83, 1);
+    expect(res.liquidationRiskTier).toBe('LOW');
+    expect(res.etfConfirmation.signal).toBe('CONFIRMED');
+    expect(res.verdict).toBe('INSTITUTIONAL_GRADE');
+  });
+
+  it('orders funding-flip sensitivity rows monotonically from steady carry to severe -2x flip', () => {
+    const btc = makeLiquidBtc('0.00003');
+    const res = computeCarryStressScenario({
+      market: btc,
+      notionalUsd: 50_000,
+      leverage: 4,
+      holdingDays: 30,
+      feeSlippageBps: 10,
+      borrowCostAprPct: 4,
+      fundingDecayPct: 20,
+      side: 'SHORT_PERP',
+    });
+
+    expect(res.sensitivity).toHaveLength(5);
+    for (let i = 1; i < res.sensitivity.length; i++) {
+      expect(res.sensitivity[i].horizonPnlUsd).toBeLessThan(res.sensitivity[i - 1].horizonPnlUsd);
+    }
+    expect(res.fundingFlipDrawdown1xUsd).toBeLessThan(0);
+    expect(res.fundingFlipDrawdown2xUsd).toBeLessThan(res.fundingFlipDrawdown1xUsd);
+    expect(res.sensitivity[4].status).toBe('DRAWDOWN');
+  });
+
+  it('captures positive carry on LONG_PERP reverse carry when funding is deeply negative', () => {
+    const btc = makeLiquidBtc('-0.00005'); // -43.8% raw => +43.8% for LONG_PERP
+    const res = computeCarryStressScenario({
+      market: btc,
+      notionalUsd: 30_000,
+      leverage: 2,
+      holdingDays: 30,
+      feeSlippageBps: 10,
+      borrowCostAprPct: 3,
+      fundingDecayPct: 0,
+      side: 'LONG_PERP',
+    });
+
+    expect(res.grossFundingAprPct).toBeCloseTo(43.8, 1);
+    expect(res.netCarryUsd).toBeGreaterThan(950);
+    expect(res.liquidationPrice).toBeLessThan(btc.markPrice);
+    expect(res.verdict).toBe('INSTITUTIONAL_GRADE');
+  });
+
+  it('does not artificially decay adverse negative funding and returns null breakEvenDays', () => {
+    const btc = makeLiquidBtc('-0.00002'); // adverse for SHORT_PERP
+    const res = computeCarryStressScenario({
+      market: btc,
+      notionalUsd: 25_000,
+      leverage: 2,
+      holdingDays: 30,
+      feeSlippageBps: 12,
+      borrowCostAprPct: 4,
+      fundingDecayPct: 50,
+      side: 'SHORT_PERP',
+    });
+
+    expect(res.grossFundingAprPct).toBeCloseTo(-17.52, 1);
+    expect(res.decayedFundingAprPct).toBeCloseTo(-17.52, 1);
+    expect(res.netCarryUsd).toBeLessThan(0);
+    expect(res.breakEvenDays).toBeNull();
+    expect(res.verdict).toBe('UNFAVORABLE_RISK');
+  });
+
+  it('flags CRITICAL liquidation risk and MAX_LEVERAGE_EXCEEDED on over-leveraged setups', () => {
+    const btc = makeLiquidBtc('0.00004');
+    const res = computeCarryStressScenario({
+      market: btc,
+      notionalUsd: 200_000, // tier 2 MMR = 5%
+      leverage: 25, // exceeds contract maxLeverage 20x, 1/25 - 0.05 < 0 => 0% buffer
+      holdingDays: 14,
+      feeSlippageBps: 15,
+      borrowCostAprPct: 4,
+      fundingDecayPct: 10,
+      side: 'SHORT_PERP',
+    });
+
+    expect(res.leverageExceeded).toBe(true);
+    expect(res.liquidationBufferPct).toBe(0);
+    expect(res.liquidationRiskTier).toBe('CRITICAL');
+    expect(res.qualityWarnings.some((w) => w.startsWith('MAX_LEVERAGE_EXCEEDED'))).toBe(true);
+    expect(res.qualityWarnings.some((w) => w.startsWith('TIGHT_LIQ_BUFFER'))).toBe(true);
+    expect(res.verdict).toBe('UNFAVORABLE_RISK');
+  });
+
+  it('flags THIN_BOOK, STALE_SPOT, and WIDE_SPREAD warnings on illiquid/stale markets', () => {
+    const illiquid = enrichMarkets(
+      [{ ...sampleContract, id: 7, name: 'MICRO-USD', displayName: 'MICRO-USD', baseCoin: 'MICRO' }],
+      [{
+        symbol: 'MICRO-USD', lastPx: '1.00', openPx: '1.00', highPx: '1.05', lowPx: '0.95',
+        volume: '150000', quoteVolume: '150000', vwap: '1.00', change: '0', changePct: 0,
+        askPx: '1.0025', askSz: '100', bidPx: '0.9975', bidSz: '100', fundingRate: '0.00005', nextFundingTime: 0,
+      }],
+      [{ symbol: 'MICRO-USD', openInterest: '50000', markPrice: '1.00', indexPrice: '1.00', fundingRate: '0.00005', nextFundingTime: 0 }],
+      [{ symbol: 'MICRO-USD', bidPx: '0.9975', bidSz: '100', askPx: '1.0025', askSz: '100' }],
+      [{ id: 77, name: 'vMICRO_vUSDC', displayName: 'MICRO/USDC', baseCoin: 'vMICRO', quoteCoin: 'vUSDC', pricePrecision: 4 }],
+      [{ symbol: 'vMICRO_vUSDC', lastPx: '1.35', bidPx: '1.34', askPx: '1.36', quoteVolume: '1000', changePct: 0 }],
+    )[0];
+
+    const res = computeCarryStressScenario({
+      market: illiquid,
+      notionalUsd: 10_000,
+      leverage: 2,
+      holdingDays: 30,
+      feeSlippageBps: 20,
+      borrowCostAprPct: 4,
+      fundingDecayPct: 0,
+      side: 'SHORT_PERP',
+    });
+
+    expect(res.qualityWarnings.some((w) => w.startsWith('THIN_BOOK'))).toBe(true);
+    expect(res.qualityWarnings.some((w) => w.startsWith('STALE_SPOT'))).toBe(true);
+    expect(res.qualityWarnings.some((w) => w.startsWith('WIDE_SPREAD'))).toBe(true);
+    expect(res.verdict).not.toBe('INSTITUTIONAL_GRADE');
+  });
+
+  it('handles zero-volume markets and zero notional safely without NaN or Infinity', () => {
+    const deadMarket = makeLiquidBtc('0.00002', '0');
+    const res = computeCarryStressScenario({
+      market: deadMarket,
+      notionalUsd: 0,
+      leverage: 3,
+      holdingDays: 30,
+      feeSlippageBps: 10,
+      borrowCostAprPct: 4,
+      fundingDecayPct: 20,
+      side: 'SHORT_PERP',
+    });
+
+    expect(Number.isFinite(res.netApyOnNotionalPct)).toBe(true);
+    expect(Number.isFinite(res.netRoeAnnualizedPct)).toBe(true);
+    expect(res.qualityWarnings.some((w) => w.startsWith('ZERO_VOLUME'))).toBe(true);
+    expect(res.verdict).toBe('UNFAVORABLE_RISK');
+  });
+
+  it('classifies SoSoValue ETF confirmation as DIVERGENT on strong inflows vs short perp, and NO_ETF_COVERAGE on equities', () => {
+    const btc = makeLiquidBtc('0.00003');
+    const strongInflows = {
+      BTC: [
+        { date: '2026-11-25', totalNetInflow: 950_000_000, totalValueTraded: 4e9, totalNetAssets: 75e9, cumNetInflow: 54e9 },
+        { date: '2026-11-24', totalNetInflow: 120_000_000, totalValueTraded: 2.5e9, totalNetAssets: 74e9, cumNetInflow: 53e9 },
+        { date: '2026-11-23', totalNetInflow: 100_000_000, totalValueTraded: 2.3e9, totalNetAssets: 73.8e9, cumNetInflow: 52.9e9 },
+        { date: '2026-11-20', totalNetInflow: 90_000_000, totalValueTraded: 2.1e9, totalNetAssets: 73.7e9, cumNetInflow: 52.8e9 },
+        { date: '2026-11-19', totalNetInflow: 85_000_000, totalValueTraded: 2.0e9, totalNetAssets: 73.6e9, cumNetInflow: 52.7e9 },
+      ],
+      ETH: [],
+      SOL: [],
+      XRP: [],
+    };
+    const divRes = computeCarryStressScenario({
+      market: btc,
+      notionalUsd: 50_000,
+      leverage: 3,
+      holdingDays: 30,
+      feeSlippageBps: 10,
+      borrowCostAprPct: 4,
+      fundingDecayPct: 10,
+      side: 'SHORT_PERP',
+      etfFlows: strongInflows,
+    });
+    expect(divRes.etfConfirmation.signal).toBe('DIVERGENT');
+
+    const nvda = enrichMarkets(
+      [{ ...sampleContract, id: 8, name: 'NVDA-USD', displayName: 'NVDA-USD', baseCoin: 'NVDA' }],
+      [{
+        symbol: 'NVDA-USD', lastPx: '180', openPx: '180', highPx: '182', lowPx: '178',
+        volume: '20000', quoteVolume: '3600000', vwap: '180', change: '0', changePct: 0,
+        askPx: '180.05', askSz: '50', bidPx: '179.95', bidSz: '50', fundingRate: '0.00002', nextFundingTime: 0,
+      }],
+      [{ symbol: 'NVDA-USD', openInterest: '10000', markPrice: '180', indexPrice: '180', fundingRate: '0.00002', nextFundingTime: 0 }],
+      [{ symbol: 'NVDA-USD', bidPx: '179.95', bidSz: '50', askPx: '180.05', askSz: '50' }],
+      [],
+      [],
+    )[0];
+    const eqRes = computeCarryStressScenario({
+      market: nvda,
+      notionalUsd: 20_000,
+      leverage: 2,
+      holdingDays: 30,
+      feeSlippageBps: 10,
+      borrowCostAprPct: 4,
+      fundingDecayPct: 0,
+      side: 'SHORT_PERP',
+      etfFlows: strongInflows,
+    });
+    expect(eqRes.etfConfirmation.signal).toBe('NO_ETF_COVERAGE');
+  });
+
+  it('serializes carry stress ticket & 5 sensitivity rows to valid RFC-4180 CSV', () => {
+    const btc = makeLiquidBtc('0.00004');
+    const res = computeCarryStressScenario({
+      market: btc,
+      notionalUsd: 50_000,
+      leverage: 3,
+      holdingDays: 30,
+      feeSlippageBps: 12,
+      borrowCostAprPct: 4.5,
+      fundingDecayPct: 25,
+      side: 'SHORT_PERP',
+      etfFlows: sampleEtfOutflows,
+    });
+    const csv = serializeCarryTicketCsv(res);
+    const lines = csv.split('\n');
+    expect(lines).toHaveLength(6); // header + 5 scenarios
+    expect(lines[0]).toContain('scenarioId,scenarioLabel');
+    expect(lines[1]).toContain('BTC-USD,SHORT_PERP,steady');
+    expect(lines[5]).toContain('flip_2x');
+  });
+
+  it('summarizes executable, thin-book, stale-spot, and divergence quality alerts accurately', () => {
+    const markets = enrichMarkets(
+      [
+        sampleContract,
+        { ...sampleContract, id: 9, name: 'THIN-USD', displayName: 'THIN-USD', baseCoin: 'THIN' },
+      ],
+      [
+        {
+          symbol: 'BTC-USD', lastPx: '88000', openPx: '88000', highPx: '89000', lowPx: '87000',
+          volume: '500', quoteVolume: '44000000', vwap: '88000', change: '0', changePct: 0,
+          askPx: '88005', askSz: '5', bidPx: '87995', bidSz: '5', fundingRate: '0.00002', nextFundingTime: 0,
+        },
+        {
+          symbol: 'THIN-USD', lastPx: '1.00', openPx: '1.00', highPx: '1.05', lowPx: '0.95',
+          volume: '50000', quoteVolume: '50000', vwap: '1.00', change: '0', changePct: 0,
+          askPx: '1.003', askSz: '100', bidPx: '0.997', bidSz: '100', fundingRate: '0.00001', nextFundingTime: 0,
+        },
+      ],
+      [
+        { symbol: 'BTC-USD', openInterest: '300', markPrice: '88000', indexPrice: '88000', fundingRate: '0.00002', nextFundingTime: 0 },
+        { symbol: 'THIN-USD', openInterest: '10000', markPrice: '1.00', indexPrice: '0.99', fundingRate: '0.00001', nextFundingTime: 0 },
+      ],
+      [
+        { symbol: 'BTC-USD', bidPx: '87995', bidSz: '5', askPx: '88005', askSz: '5' },
+        { symbol: 'THIN-USD', bidPx: '0.997', bidSz: '100', askPx: '1.003', askSz: '100' },
+      ],
+      [{ id: 99, name: 'vTHIN_vUSDC', displayName: 'THIN/USDC', baseCoin: 'vTHIN', quoteCoin: 'vUSDC', pricePrecision: 4 }],
+      [{ symbol: 'vTHIN_vUSDC', lastPx: '1.40', bidPx: '1.39', askPx: '1.41', quoteVolume: '500', changePct: 0 }],
+    );
+
+    const summary = summarizeQualityAlerts(markets);
+    expect(summary.totalMarkets).toBe(2);
+    expect(summary.executableCount).toBe(1);
+    expect(summary.thinBookCount).toBe(1);
+    expect(summary.staleSpotCount).toBe(1);
+    expect(summary.divergenceAlertCount).toBe(1);
+  });
+
+  it('validates bundled public/data/soso-snapshot.json schema integrity (24/24 endpoints)', () => {
+    const snapPath = path.resolve(process.cwd(), 'public/data/soso-snapshot.json');
+    const raw = fs.readFileSync(snapPath, 'utf-8');
+    const snap = JSON.parse(raw);
+
+    expect(snap.endpointsVerified).toBe(24);
+    expect(typeof snap.fetchedAt).toBe('string');
+    expect(snap.marketOverview).toBeTruthy();
+    expect(snap.marketOverview.totalMarketCap).toBeGreaterThan(0);
+    expect(snap.etfFlows.BTC.length).toBeGreaterThan(0);
+    expect(snap.etfFlows.ETH.length).toBeGreaterThan(0);
+    expect(snap.etfFlows.SOL.length).toBeGreaterThan(0);
+    expect(snap.etfFlows.XRP.length).toBeGreaterThan(0);
+    expect(snap.ssiIndices.length).toBeGreaterThanOrEqual(13);
+    expect(snap.hotNews.length).toBeGreaterThan(0);
+    expect(snap.treasuries.length).toBeGreaterThan(0);
+  });
+
+  it('enforces zero-secret regression guard on bundled SoSoValue snapshot and judge HTML assets', () => {
+    const filesToAudit = [
+      'public/data/soso-snapshot.json',
+      'public/judge-brief.html',
+      'public/deck.html',
+    ];
+    const forbiddenPatterns = [
+      /SOSO-[A-Za-z0-9]{10,}/,
+      /ghp_[A-Za-z0-9]{10,}/,
+      /github_pat_[A-Za-z0-9_]{10,}/,
+      /Bearer\s+[A-Za-z0-9._-]{20,}/,
+      /x-soso-api-key["']?\s*[:=]\s*["'][A-Za-z0-9_-]{8,}/i,
+    ];
+
+    for (const rel of filesToAudit) {
+      const content = fs.readFileSync(path.resolve(process.cwd(), rel), 'utf-8');
+      for (const re of forbiddenPatterns) {
+        expect(re.test(content), `Potential secret pattern ${re} matched in ${rel}`).toBe(false);
+      }
+    }
   });
 });

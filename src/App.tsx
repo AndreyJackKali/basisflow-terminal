@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Activity,
   BarChart3,
+  Compass,
   Cpu,
+  FileText,
   KeyRound,
   PlayCircle,
   Presentation,
@@ -40,12 +42,18 @@ import {
   probeSoSoValueOpenApi,
 } from './lib/api';
 import { createSodexPerpStream } from './lib/ws';
-import { enrichMarkets } from './lib/quant';
+import {
+  computeCarryStressScenario,
+  enrichMarkets,
+  serializeMarketsToCsv,
+  summarizeQualityAlerts,
+} from './lib/quant';
 import { ScannerTab } from './components/ScannerTab';
 import { MicrostructureTab } from './components/MicrostructureTab';
 import { ExecutionTab } from './components/ExecutionTab';
 import { SoSoValueTab } from './components/SoSoValueTab';
 import { ApiConsoleDrawer } from './components/ApiConsoleDrawer';
+import { JUDGE_TOUR_STEPS, JudgeTourOverlay } from './components/JudgeTourOverlay';
 
 type TabKey = 'scanner' | 'microstructure' | 'execution' | 'sosovalue';
 
@@ -56,6 +64,8 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('scanner');
   const [consoleOpen, setConsoleOpen] = useState(false);
   const [killSwitch, setKillSwitch] = useState(false);
+  const [tourOpen, setTourOpen] = useState(false);
+  const [tourStep, setTourStep] = useState(0);
 
   const [apiLogs, setApiLogs] = useState<ApiProbeLog[]>([]);
   const pushLog = useCallback((log: ApiProbeLog) => {
@@ -335,6 +345,78 @@ export default function App() {
     [markets, selectedSymbol],
   );
 
+  const qualitySummary = useMemo(() => summarizeQualityAlerts(markets), [markets]);
+
+  const handleTourStepChange = useCallback(
+    (nextIdx: number) => {
+      const clamped = Math.max(0, Math.min(JUDGE_TOUR_STEPS.length - 1, nextIdx));
+      const meta = JUDGE_TOUR_STEPS[clamped];
+      setTourStep(clamped);
+      setActiveTab(meta.tab);
+      if (clamped === 1 && markets.some((m) => m.symbol === 'BTC-USD')) {
+        setSelectedSymbol('BTC-USD');
+      }
+      if (meta.scrollTargetId) {
+        window.setTimeout(() => {
+          document.getElementById(meta.scrollTargetId!)?.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+          });
+        }, 90);
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    },
+    [markets],
+  );
+
+  const handleStartTour = useCallback(() => {
+    setTourOpen(true);
+    handleTourStepChange(0);
+  }, [handleTourStepChange]);
+
+  const handleExportScannerCsv = useCallback(() => {
+    const csv = serializeMarketsToCsv(markets);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `basisflow-sodex-scanner-${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [markets]);
+
+  const handleExportCarryTicketJson = useCallback(() => {
+    const target = markets.find((m) => m.symbol === selectedSymbol) ?? markets[0];
+    if (!target) return;
+    const calc = computeCarryStressScenario({
+      market: target,
+      notionalUsd: 50_000,
+      leverage: 3,
+      holdingDays: 30,
+      feeSlippageBps: 12,
+      borrowCostAprPct: 4.5,
+      fundingDecayPct: 25,
+      side: target.annualizedFundingApr >= 0 ? 'SHORT_PERP' : 'LONG_PERP',
+      etfFlows: sosoState.etfFlows,
+    });
+    const payload = {
+      ...calc.ticket,
+      sensitivity: calc.sensitivity,
+      etfConfirmation: calc.etfConfirmation,
+      soSoSnapshotFetchedAt: sosoState.snapshotFetchedAt,
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: 'application/json;charset=utf-8;',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `basisflow-carry-ticket-${target.symbol.toLowerCase()}-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [markets, selectedSymbol, sosoState.etfFlows, sosoState.snapshotFetchedAt]);
+
   // Fetch paired Spot L2 Orderbook when a Spot↔Perp asset is selected (powers 2-leg Delta-Neutral Hedge Builder)
   useEffect(() => {
     let active = true;
@@ -439,10 +521,13 @@ export default function App() {
               BF
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <h1 className="text-sm font-bold tracking-tight text-slate-100">
                   BasisFlow Terminal
                 </h1>
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/35">
+                  v1.6.0
+                </span>
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
                   SoDEX + ValueChain + SoSoValue
                 </span>
@@ -525,6 +610,15 @@ export default function App() {
             </button>
 
             <button
+              onClick={handleStartTour}
+              className="px-2.5 py-1 rounded border border-emerald-400/60 bg-emerald-500/20 text-emerald-200 hover:bg-emerald-500/30 font-semibold inline-flex items-center gap-1 transition whitespace-nowrap"
+              title="1-Click 60-Second Guided Judge Walkthrough"
+            >
+              <Compass className="w-3.5 h-3.5" />
+              60s Judge Tour
+            </button>
+
+            <button
               onClick={loadGlobalData}
               disabled={loadingMarkets}
               className="p-1.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300"
@@ -537,19 +631,19 @@ export default function App() {
 
         {/* Navigation Tabs */}
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between gap-2 overflow-x-auto border-t border-slate-800/60">
-          <div className="flex gap-1">
+          <div className="flex gap-0.5">
             {(
               [
                 ['scanner', '1. Basis & Carry Scanner', Activity],
-                ['microstructure', '2. L2 Microstructure & Regime', BarChart3],
-                ['execution', '3. Risk-Gated Execution Desk', ShieldCheck],
-                ['sosovalue', '4. ETF & SSI Intelligence (SoSoValue)', KeyRound],
+                ['microstructure', '2. L2 Microstructure', BarChart3],
+                ['execution', '3. Risk & Execution Desk', ShieldCheck],
+                ['sosovalue', '4. SoSoValue ETF & SSI', KeyRound],
               ] as const
             ).map(([key, label, Icon]) => (
               <button
                 key={key}
                 onClick={() => setActiveTab(key)}
-                className={`px-3.5 py-2 text-xs font-medium inline-flex items-center gap-1.5 border-b-2 transition whitespace-nowrap ${
+                className={`px-3 py-2 text-xs font-medium inline-flex items-center gap-1.5 border-b-2 transition whitespace-nowrap ${
                   activeTab === key
                     ? 'border-emerald-400 text-emerald-300 bg-emerald-500/5'
                     : 'border-transparent text-slate-400 hover:text-slate-200'
@@ -560,12 +654,21 @@ export default function App() {
               </button>
             ))}
           </div>
-          <div className="hidden md:flex items-center gap-2 py-1 shrink-0 text-[11px] font-mono">
+          <div className="hidden md:flex items-center gap-1.5 py-1 shrink-0 text-[11px] font-mono">
+            <a
+              href="./judge-brief.html"
+              target="_blank"
+              rel="noreferrer"
+              className="px-2 py-1 rounded border border-indigo-500/40 bg-indigo-500/15 text-indigo-300 hover:bg-indigo-500/25 inline-flex items-center gap-1 transition whitespace-nowrap"
+            >
+              <FileText className="w-3 h-3" />
+              Judge Brief
+            </a>
             <a
               href="./deck.html"
               target="_blank"
               rel="noreferrer"
-              className="px-2 py-1 rounded border border-cyan-500/35 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 inline-flex items-center gap-1 transition"
+              className="px-2 py-1 rounded border border-cyan-500/35 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20 inline-flex items-center gap-1 transition whitespace-nowrap"
             >
               <Presentation className="w-3 h-3" />
               Pitch Deck
@@ -574,7 +677,7 @@ export default function App() {
               href="./demo.mp4"
               target="_blank"
               rel="noreferrer"
-              className="px-2 py-1 rounded border border-emerald-500/35 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 inline-flex items-center gap-1 transition"
+              className="px-2 py-1 rounded border border-emerald-500/35 bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 inline-flex items-center gap-1 transition whitespace-nowrap"
             >
               <PlayCircle className="w-3 h-3" />
               60s Demo
@@ -692,6 +795,17 @@ export default function App() {
       </footer>
 
       <ApiConsoleDrawer open={consoleOpen} onClose={() => setConsoleOpen(false)} logs={apiLogs} />
+      <JudgeTourOverlay
+        open={tourOpen}
+        stepIndex={tourStep}
+        onClose={() => setTourOpen(false)}
+        onStepChange={handleTourStepChange}
+        sosoState={sosoState}
+        markets={markets}
+        qualitySummary={qualitySummary}
+        onExportScannerCsv={handleExportScannerCsv}
+        onExportCarryTicketJson={handleExportCarryTicketJson}
+      />
     </div>
   );
 }

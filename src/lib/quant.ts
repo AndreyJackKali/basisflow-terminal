@@ -1,5 +1,9 @@
 import type {
   AssetClass,
+  CarryEtfConfirmation,
+  CarryStressInput,
+  CarryStressResult,
+  CarryStressSensitivityRow,
   ConvictionBreakdown,
   DeltaNeutralHedgeInput,
   DeltaNeutralHedgeResult,
@@ -15,6 +19,7 @@ import type {
   PerpSymbolInfo,
   PerpTicker,
   BookTicker,
+  QualityAlertSummary,
   RegimeResult,
   RiskEvaluationInput,
   RiskEvaluationResult,
@@ -1478,7 +1483,7 @@ export function generateOperatorSignalBrief(
   }
   lines.push(
     '',
-    '_Generated deterministically by BasisFlow Terminal v1.5.2 — non-custodial analytics, verify L2 slippage before execution._',
+    '_Generated deterministically by BasisFlow Terminal v1.6.0 — non-custodial analytics, verify L2 slippage before execution._',
   );
 
   return {
@@ -1490,5 +1495,366 @@ export function generateOperatorSignalBrief(
     marketCapUsd: mcap,
     topHeadlines,
     markdown: lines.join('\n'),
+  };
+}
+
+/**
+ * Institutional Carry-Trade & Liquidation Stress-Test Calculator (v1.6.0).
+ * Wired directly to live SoDEX perp/spot contract parameters and SoSoValue OpenAPI v1 ETF flows.
+ */
+export function computeCarryStressScenario(input: CarryStressInput): CarryStressResult {
+  const { market, side, etfFlows } = input;
+  const notionalUsd = Math.max(0, safeNum(input.notionalUsd));
+  const leverage = Math.max(1, Math.min(100, safeNum(input.leverage, 1)));
+  const holdingDays = Math.max(1, Math.min(365, safeNum(input.holdingDays, 30)));
+  const feeSlippageBps = Math.max(0, safeNum(input.feeSlippageBps, 0));
+  const borrowCostAprPct = Math.max(0, safeNum(input.borrowCostAprPct, 0));
+  const fundingDecayPct = Math.max(0, Math.min(100, safeNum(input.fundingDecayPct, 0)));
+
+  const effectiveMaxLeverage = Math.max(1, safeNum(market.contract.maxLeverage, 10));
+  const leverageExceeded = leverage > effectiveMaxLeverage;
+  const collateralUsd = notionalUsd / leverage;
+
+  // Signed funding APR from the perspective of the chosen carry side
+  const grossFundingAprPct =
+    side === 'SHORT_PERP' ? market.annualizedFundingApr : -market.annualizedFundingApr;
+
+  // Conservative decay: positive funding decays toward 0; negative funding does not improve
+  const decayedFundingAprPct =
+    grossFundingAprPct > 0 ? grossFundingAprPct * (1 - fundingDecayPct / 100) : grossFundingAprPct;
+
+  const horizonYears = holdingDays / 365;
+  const executionCostUsd = notionalUsd * (feeSlippageBps / 10_000);
+  const grossCarryUsd = notionalUsd * (decayedFundingAprPct / 100) * horizonYears;
+  const borrowCostUsd = notionalUsd * (borrowCostAprPct / 100) * horizonYears;
+  const netCarryUsd = grossCarryUsd - borrowCostUsd - executionCostUsd;
+
+  const netApyOnNotionalPct =
+    notionalUsd > 0 && horizonYears > 0 ? (netCarryUsd / notionalUsd / horizonYears) * 100 : 0;
+  const netRoeAnnualizedPct =
+    collateralUsd > 0 && horizonYears > 0 ? (netCarryUsd / collateralUsd / horizonYears) * 100 : 0;
+
+  const dailyNetCarryUsd = (notionalUsd * ((decayedFundingAprPct - borrowCostAprPct) / 100)) / 365;
+  let breakEvenDays: number | null = null;
+  if (notionalUsd > 0) {
+    if (executionCostUsd <= 0 && dailyNetCarryUsd >= 0) {
+      breakEvenDays = 0;
+    } else if (dailyNetCarryUsd > 1e-9) {
+      breakEvenDays = Number((executionCostUsd / dailyNetCarryUsd).toFixed(1));
+    }
+  }
+
+  // Maintenance margin & liquidation buffer from SoDEX contract marginTiers
+  const mmr = getMaintenanceMarginRate(market, notionalUsd);
+  const liqMoveFrac = Math.max(0, 1 / leverage - mmr);
+  const markPrice = Math.max(0, safeNum(market.markPrice));
+  const liquidationPrice =
+    side === 'LONG_PERP'
+      ? markPrice * Math.max(0, 1 - liqMoveFrac)
+      : markPrice * (1 + liqMoveFrac);
+  const liquidationBufferPct = liqMoveFrac * 100;
+
+  const liquidationRiskTier: CarryStressResult['liquidationRiskTier'] =
+    liquidationBufferPct <= 5 || leverageExceeded
+      ? 'CRITICAL'
+      : liquidationBufferPct <= 12
+        ? 'HIGH'
+        : liquidationBufferPct <= 25
+          ? 'MODERATE'
+          : 'LOW';
+
+  // Funding-flip sensitivity ladder (always adverse on flip scenarios)
+  const stressBaseApr = Math.abs(grossFundingAprPct) > 0.5 ? Math.abs(grossFundingAprPct) : 10;
+  const scenarioDefs: Array<{
+    id: CarryStressSensitivityRow['id'];
+    label: string;
+    apr: number;
+  }> = [
+    { id: 'steady', label: 'Steady Funding (0% Decay)', apr: grossFundingAprPct },
+    {
+      id: 'decay_50',
+      label: 'Funding Decay (-50%)',
+      apr: grossFundingAprPct > 0 ? grossFundingAprPct * 0.5 : grossFundingAprPct,
+    },
+    { id: 'flat_0', label: 'Zero Funding Regime (0%)', apr: 0 },
+    { id: 'flip_1x', label: 'Funding Flip (-1× Adverse)', apr: -stressBaseApr },
+    { id: 'flip_2x', label: 'Severe Regime Flip (-2×)', apr: -2 * stressBaseApr },
+  ];
+
+  const sensitivity: CarryStressSensitivityRow[] = scenarioDefs.map((s) => {
+    const scenGross = notionalUsd * (s.apr / 100) * horizonYears;
+    const scenNet = scenGross - borrowCostUsd - executionCostUsd;
+    const roePct = collateralUsd > 0 ? (scenNet / collateralUsd) * 100 : 0;
+    const netApyPct =
+      notionalUsd > 0 && horizonYears > 0 ? (scenNet / notionalUsd / horizonYears) * 100 : 0;
+    const status: CarryStressSensitivityRow['status'] =
+      scenNet > 0 && netApyPct >= 2 ? 'PROFITABLE' : scenNet >= 0 ? 'MARGINAL' : 'DRAWDOWN';
+    return {
+      id: s.id,
+      label: s.label,
+      effectiveFundingAprPct: Number(s.apr.toFixed(2)),
+      horizonPnlUsd: Number(scenNet.toFixed(2)),
+      roePct: Number(roePct.toFixed(2)),
+      netApyPct: Number(netApyPct.toFixed(2)),
+      status,
+    };
+  });
+
+  const fundingFlipDrawdown1xUsd = sensitivity.find((s) => s.id === 'flip_1x')?.horizonPnlUsd ?? 0;
+  const fundingFlipDrawdown2xUsd = sensitivity.find((s) => s.id === 'flip_2x')?.horizonPnlUsd ?? 0;
+
+  // SoSoValue US Spot ETF confirmation signal
+  const cleanBase = market.baseCoin.toUpperCase();
+  const etfAssets: SoSoEtfAsset[] = ['BTC', 'ETH', 'SOL', 'XRP'];
+  const matchedAsset = etfAssets.includes(cleanBase as SoSoEtfAsset)
+    ? (cleanBase as SoSoEtfAsset)
+    : null;
+  const etfRows = matchedAsset && etfFlows ? etfFlows[matchedAsset] ?? [] : [];
+
+  let etfConfirmation: CarryEtfConfirmation;
+  if (matchedAsset && etfRows.length > 0) {
+    const stats = computeEtfFlowStats(etfRows);
+    const fiveDay = stats.fiveDayNetInflow;
+    const z30 = stats.zScore30d;
+    let signal: CarryEtfConfirmation['signal'] = 'CAUTIOUS';
+    let explanation = '';
+
+    if (side === 'SHORT_PERP') {
+      if (fiveDay < 0 && grossFundingAprPct > 0) {
+        signal = 'CONFIRMED';
+        explanation = `US Spot ${matchedAsset} ETF 5d outflows ($${(fiveDay / 1e6).toFixed(1)}M, Z=${z30.toFixed(2)}) diverge from positive SoDEX perp funding (+${grossFundingAprPct.toFixed(1)}% APR) — strong carry-short tailwind.`;
+      } else if (fiveDay > 0 && z30 >= 0.75) {
+        signal = 'DIVERGENT';
+        explanation = `Strong US Spot ${matchedAsset} ETF inflows (+$${(fiveDay / 1e6).toFixed(1)}M 5d, Z=${z30.toFixed(2)}) oppose short-perp carry — elevated upside squeeze & margin call risk.`;
+      } else {
+        signal = 'CAUTIOUS';
+        explanation = `US Spot ${matchedAsset} ETF flows ($${(fiveDay / 1e6).toFixed(1)}M 5d, Z=${z30.toFixed(2)}) are neutral vs. ${grossFundingAprPct.toFixed(1)}% perp carry — keep leverage conservative.`;
+      }
+    } else {
+      if (fiveDay > 0 && grossFundingAprPct > 0) {
+        signal = 'CONFIRMED';
+        explanation = `US Spot ${matchedAsset} ETF inflows (+$${(fiveDay / 1e6).toFixed(1)}M 5d, Z=${z30.toFixed(2)}) confirm long-perp reverse carry (+${grossFundingAprPct.toFixed(1)}% APR).`;
+      } else if (fiveDay < 0 && z30 <= -0.75) {
+        signal = 'DIVERGENT';
+        explanation = `Sustained US Spot ${matchedAsset} ETF outflows ($${(fiveDay / 1e6).toFixed(1)}M 5d, Z=${z30.toFixed(2)}) oppose long-perp exposure — watch downside gap risk.`;
+      } else {
+        signal = 'CAUTIOUS';
+        explanation = `US Spot ${matchedAsset} ETF flows ($${(fiveDay / 1e6).toFixed(1)}M 5d, Z=${z30.toFixed(2)}) show mixed confirmation for long-perp carry.`;
+      }
+    }
+
+    etfConfirmation = {
+      asset: matchedAsset,
+      signal,
+      flowZScore30d: z30,
+      fiveDayNetInflowUsd: fiveDay,
+      latestDate: stats.latestDate,
+      explanation,
+    };
+  } else {
+    etfConfirmation = {
+      asset: null,
+      signal: 'NO_ETF_COVERAGE',
+      flowZScore30d: null,
+      fiveDayNetInflowUsd: null,
+      latestDate: null,
+      explanation: `${market.symbol} has no US Spot ETF feed in SoSoValue OpenAPI v1 — rely on SoDEX L2 depth & funding/basis quality gates.`,
+    };
+  }
+
+  // Institutional data-quality & structural risk warnings
+  const qualityWarnings: string[] = [];
+  if (market.quoteVolume24h <= 0) {
+    qualityWarnings.push('ZERO_VOLUME: No 24h perp turnover recorded — execution unverified.');
+  } else if (market.quoteVolume24h < THIN_BOOK_USD) {
+    qualityWarnings.push(
+      `THIN_BOOK: 24h volume ($${(market.quoteVolume24h / 1000).toFixed(0)}k) is below ${THIN_BOOK_LABEL} institutional gate — elevated exit slippage.`,
+    );
+  }
+  if (market.conviction.qualityFlags?.includes('STALE_SPOT')) {
+    qualityWarnings.push(
+      `STALE_SPOT: Spot↔Perp spread exceeds ${STALE_BASIS_BPS} bps — spot quote unreliable for hedged basis.`,
+    );
+  }
+  if (market.spreadBps >= 30) {
+    qualityWarnings.push(
+      `WIDE_SPREAD: Top-of-book spread is ${market.spreadBps.toFixed(1)} bps — use passive Post-Only limit orders.`,
+    );
+  }
+  if (leverageExceeded) {
+    qualityWarnings.push(
+      `MAX_LEVERAGE_EXCEEDED: ${leverage}x exceeds SoDEX ${market.symbol} limit (${effectiveMaxLeverage}x).`,
+    );
+  }
+  if (liquidationBufferPct <= 8) {
+    qualityWarnings.push(
+      `TIGHT_LIQ_BUFFER: Liquidation buffer is only ${liquidationBufferPct.toFixed(1)}% — vulnerable to intraday wick.`,
+    );
+  }
+
+  let verdict: CarryStressResult['verdict'] = 'CONDITIONAL_CARRY';
+  if (
+    notionalUsd <= 0 ||
+    netCarryUsd <= 0 ||
+    liquidationRiskTier === 'CRITICAL' ||
+    leverageExceeded ||
+    market.quoteVolume24h <= 0
+  ) {
+    verdict = 'UNFAVORABLE_RISK';
+  } else if (
+    netApyOnNotionalPct >= 5 &&
+    liquidationBufferPct >= 15 &&
+    qualityWarnings.length === 0 &&
+    breakEvenDays !== null &&
+    breakEvenDays <= holdingDays * 0.5
+  ) {
+    verdict = 'INSTITUTIONAL_GRADE';
+  }
+
+  const generatedAtUtc = new Date().toISOString();
+  const ticket: CarryStressResult['ticket'] = {
+    schema: 'basisflow.carry-ticket.v1.6',
+    generatedAtUtc,
+    symbol: market.symbol,
+    side,
+    notionalUsd: Number(notionalUsd.toFixed(2)),
+    collateralUsd: Number(collateralUsd.toFixed(2)),
+    leverage,
+    holdingDays,
+    feeSlippageBps: Number(feeSlippageBps.toFixed(2)),
+    borrowCostAprPct: Number(borrowCostAprPct.toFixed(2)),
+    fundingDecayPct: Number(fundingDecayPct.toFixed(1)),
+    markPrice,
+    liquidationPrice: Number(liquidationPrice.toFixed(Math.min(4, market.contract.pricePrecision))),
+    liquidationBufferPct: Number(liquidationBufferPct.toFixed(2)),
+    grossFundingAprPct: Number(grossFundingAprPct.toFixed(2)),
+    netApyOnNotionalPct: Number(netApyOnNotionalPct.toFixed(2)),
+    netRoeAnnualizedPct: Number(netRoeAnnualizedPct.toFixed(2)),
+    breakEvenDays,
+    etfConfirmationSignal: etfConfirmation.signal,
+    qualityWarnings,
+    verdict,
+  };
+
+  return {
+    symbol: market.symbol,
+    baseCoin: market.baseCoin,
+    side,
+    notionalUsd: Number(notionalUsd.toFixed(2)),
+    collateralUsd: Number(collateralUsd.toFixed(2)),
+    leverage,
+    effectiveMaxLeverage,
+    leverageExceeded,
+    holdingDays,
+    grossFundingAprPct: Number(grossFundingAprPct.toFixed(2)),
+    decayedFundingAprPct: Number(decayedFundingAprPct.toFixed(2)),
+    borrowCostAprPct: Number(borrowCostAprPct.toFixed(2)),
+    executionCostUsd: Number(executionCostUsd.toFixed(2)),
+    executionCostBps: Number(feeSlippageBps.toFixed(2)),
+    grossCarryUsd: Number(grossCarryUsd.toFixed(2)),
+    borrowCostUsd: Number(borrowCostUsd.toFixed(2)),
+    netCarryUsd: Number(netCarryUsd.toFixed(2)),
+    netApyOnNotionalPct: Number(netApyOnNotionalPct.toFixed(2)),
+    netRoeAnnualizedPct: Number(netRoeAnnualizedPct.toFixed(2)),
+    dailyNetCarryUsd: Number(dailyNetCarryUsd.toFixed(2)),
+    breakEvenDays,
+    maintenanceMarginRate: mmr,
+    liquidationPrice: Number(liquidationPrice.toFixed(Math.min(4, market.contract.pricePrecision))),
+    liquidationBufferPct: Number(liquidationBufferPct.toFixed(2)),
+    liquidationRiskTier,
+    fundingFlipDrawdown1xUsd,
+    fundingFlipDrawdown2xUsd,
+    sensitivity,
+    etfConfirmation,
+    qualityWarnings,
+    verdict,
+    ticket,
+  };
+}
+
+/**
+ * Serializes a CarryStressResult (ticket + 5 funding-flip sensitivity rows) into RFC-4180 CSV.
+ */
+export function serializeCarryTicketCsv(result: CarryStressResult): string {
+  const esc = (v: unknown) => {
+    const s = String(v ?? '');
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const header = [
+    'symbol',
+    'side',
+    'scenarioId',
+    'scenarioLabel',
+    'notionalUsd',
+    'collateralUsd',
+    'leverage',
+    'holdingDays',
+    'effectiveFundingAprPct',
+    'horizonPnlUsd',
+    'roePct',
+    'netApyPct',
+    'breakEvenDays',
+    'liquidationBufferPct',
+    'etfSignal',
+    'verdict',
+    'status',
+  ];
+  const rows = result.sensitivity.map((s) =>
+    [
+      result.symbol,
+      result.side,
+      s.id,
+      s.label,
+      result.notionalUsd,
+      result.collateralUsd,
+      result.leverage,
+      result.holdingDays,
+      s.effectiveFundingAprPct,
+      s.horizonPnlUsd,
+      s.roePct,
+      s.netApyPct,
+      result.breakEvenDays ?? 'NEVER',
+      result.liquidationBufferPct,
+      result.etfConfirmation.signal,
+      result.verdict,
+      s.status,
+    ]
+      .map(esc)
+      .join(','),
+  );
+  return [header.join(','), ...rows].join('\n');
+}
+
+/**
+ * Summarizes Thin-Book (<$1M), Stale-Spot (>1500 bps), and Spread/Basis Divergence alerts across live markets.
+ */
+export function summarizeQualityAlerts(markets: EnrichedMarket[]): QualityAlertSummary {
+  let executableCount = 0;
+  let thinBookCount = 0;
+  let staleSpotCount = 0;
+  let divergenceAlertCount = 0;
+
+  for (const m of markets) {
+    const flags = m.conviction.qualityFlags ?? [];
+    const isThin = flags.includes('THIN_BOOK') || m.quoteVolume24h < THIN_BOOK_USD;
+    const isStale = flags.includes('STALE_SPOT');
+    if (isThin) thinBookCount += 1;
+    else executableCount += 1;
+    if (isStale) staleSpotCount += 1;
+    if (
+      Math.abs(m.markIndexBasisBps) >= 25 ||
+      m.spreadBps >= 30 ||
+      (m.spotPerpSpreadBps !== null && !isStale && Math.abs(m.spotPerpSpreadBps) >= 25)
+    ) {
+      divergenceAlertCount += 1;
+    }
+  }
+
+  return {
+    totalMarkets: markets.length,
+    executableCount,
+    thinBookCount,
+    staleSpotCount,
+    divergenceAlertCount,
   };
 }

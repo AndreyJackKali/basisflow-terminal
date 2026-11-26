@@ -17,6 +17,7 @@ import {
 } from '../lib/quant';
 import { NETWORK_CONFIG } from '../lib/api';
 import { CounterfactualChart } from './Charts';
+import { CarryStressCalculatorCard } from './CarryStressCalculatorCard';
 import { DeltaNeutralHedgeCard } from './DeltaNeutralHedgeCard';
 import { MonteCarloStressCard } from './MonteCarloStressCard';
 import { SoloDeskBusinessCard } from './SoloDeskBusinessCard';
@@ -432,6 +433,14 @@ export const ExecutionTab: React.FC<Props> = ({
           </pre>
         </div>
       </div>
+
+      {/* v1.6.0 Institutional Carry-Trade & Liquidation Stress-Test Calculator */}
+      <CarryStressCalculatorCard
+        markets={markets}
+        selectedMarket={selectedMarket}
+        onChangeSymbol={onChangeSymbol}
+        sosoState={sosoState}
+      />
 
       {/* Multi-Leg Spot↔Perp Delta-Neutral Hedge & Net Carry Builder */}
       <DeltaNeutralHedgeCard

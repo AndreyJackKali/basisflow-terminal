@@ -594,3 +594,101 @@ export interface OperatorSignalBrief {
   topHeadlines: string[];
   markdown: string;
 }
+
+export type CarryStrategySide = 'SHORT_PERP' | 'LONG_PERP';
+
+export interface CarryStressInput {
+  market: EnrichedMarket;
+  notionalUsd: number;
+  leverage: number;
+  holdingDays: number;
+  feeSlippageBps: number;
+  borrowCostAprPct: number;
+  fundingDecayPct: number;
+  side: CarryStrategySide;
+  etfFlows?: Record<SoSoEtfAsset, SoSoEtfDayRow[]>;
+}
+
+export interface CarryStressSensitivityRow {
+  id: 'steady' | 'decay_50' | 'flat_0' | 'flip_1x' | 'flip_2x';
+  label: string;
+  effectiveFundingAprPct: number;
+  horizonPnlUsd: number;
+  roePct: number;
+  netApyPct: number;
+  status: 'PROFITABLE' | 'MARGINAL' | 'DRAWDOWN';
+}
+
+export interface CarryEtfConfirmation {
+  asset: SoSoEtfAsset | null;
+  signal: 'CONFIRMED' | 'DIVERGENT' | 'CAUTIOUS' | 'NO_ETF_COVERAGE';
+  flowZScore30d: number | null;
+  fiveDayNetInflowUsd: number | null;
+  latestDate: string | null;
+  explanation: string;
+}
+
+export interface CarryStressResult {
+  symbol: string;
+  baseCoin: string;
+  side: CarryStrategySide;
+  notionalUsd: number;
+  collateralUsd: number;
+  leverage: number;
+  effectiveMaxLeverage: number;
+  leverageExceeded: boolean;
+  holdingDays: number;
+  grossFundingAprPct: number;
+  decayedFundingAprPct: number;
+  borrowCostAprPct: number;
+  executionCostUsd: number;
+  executionCostBps: number;
+  grossCarryUsd: number;
+  borrowCostUsd: number;
+  netCarryUsd: number;
+  netApyOnNotionalPct: number;
+  netRoeAnnualizedPct: number;
+  dailyNetCarryUsd: number;
+  breakEvenDays: number | null;
+  maintenanceMarginRate: number;
+  liquidationPrice: number;
+  liquidationBufferPct: number;
+  liquidationRiskTier: 'LOW' | 'MODERATE' | 'HIGH' | 'CRITICAL';
+  fundingFlipDrawdown1xUsd: number;
+  fundingFlipDrawdown2xUsd: number;
+  sensitivity: CarryStressSensitivityRow[];
+  etfConfirmation: CarryEtfConfirmation;
+  qualityWarnings: string[];
+  verdict: 'INSTITUTIONAL_GRADE' | 'CONDITIONAL_CARRY' | 'UNFAVORABLE_RISK';
+  ticket: {
+    schema: 'basisflow.carry-ticket.v1.6';
+    generatedAtUtc: string;
+    symbol: string;
+    side: CarryStrategySide;
+    notionalUsd: number;
+    collateralUsd: number;
+    leverage: number;
+    holdingDays: number;
+    feeSlippageBps: number;
+    borrowCostAprPct: number;
+    fundingDecayPct: number;
+    markPrice: number;
+    liquidationPrice: number;
+    liquidationBufferPct: number;
+    grossFundingAprPct: number;
+    netApyOnNotionalPct: number;
+    netRoeAnnualizedPct: number;
+    breakEvenDays: number | null;
+    etfConfirmationSignal: CarryEtfConfirmation['signal'];
+    qualityWarnings: string[];
+    verdict: 'INSTITUTIONAL_GRADE' | 'CONDITIONAL_CARRY' | 'UNFAVORABLE_RISK';
+  };
+}
+
+export interface QualityAlertSummary {
+  totalMarkets: number;
+  executableCount: number;
+  thinBookCount: number;
+  staleSpotCount: number;
+  divergenceAlertCount: number;
+}

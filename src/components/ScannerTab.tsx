@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowUpDown, Download, Search, TrendingUp, Layers, ShieldCheck, Activity } from 'lucide-react';
+import { AlertTriangle, ArrowUpDown, Download, Search, TrendingUp, Layers, ShieldCheck, Activity } from 'lucide-react';
 import type { EnrichedMarket } from '../types';
-import { serializeMarketsToCsv, THIN_BOOK_USD, THIN_BOOK_LABEL } from '../lib/quant';
+import { serializeMarketsToCsv, summarizeQualityAlerts, THIN_BOOK_USD, THIN_BOOK_LABEL } from '../lib/quant';
 
 interface Props {
   markets: EnrichedMarket[];
@@ -11,7 +11,7 @@ interface Props {
   etfFlowZScore: number;
 }
 
-type FilterKey = 'ALL' | 'SPOT_PERP' | 'CRYPTO' | 'EQUITY' | 'COMMODITY' | 'HIGH_CARRY';
+type FilterKey = 'ALL' | 'SPOT_PERP' | 'CRYPTO' | 'EQUITY' | 'COMMODITY' | 'HIGH_CARRY' | 'QUALITY_ALERTS';
 type SortKey = 'conviction' | 'fundingApr' | 'spotPerp' | 'volume' | 'oi' | 'spread';
 
 function fmtUsd(v: number): string {
@@ -44,6 +44,8 @@ export const ScannerTab: React.FC<Props> = ({
     return { overlapCount, totalVol, totalOi, topCarry };
   }, [markets]);
 
+  const qualitySummary = useMemo(() => summarizeQualityAlerts(markets), [markets]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toUpperCase();
     return markets
@@ -56,6 +58,15 @@ export const ScannerTab: React.FC<Props> = ({
         if (filter === 'EQUITY') return m.assetClass === 'Tokenized Equity';
         if (filter === 'COMMODITY') return m.assetClass === 'Commodity';
         if (filter === 'HIGH_CARRY') return Math.abs(m.annualizedFundingApr) >= 15;
+        if (filter === 'QUALITY_ALERTS') {
+          const flags = m.conviction.qualityFlags ?? [];
+          return (
+            flags.length > 0 ||
+            m.quoteVolume24h < THIN_BOOK_USD ||
+            Math.abs(m.markIndexBasisBps) >= 25 ||
+            m.spreadBps >= 30
+          );
+        }
         return true;
       })
       .sort((a, b) => {
@@ -156,6 +167,41 @@ export const ScannerTab: React.FC<Props> = ({
         </div>
       </div>
 
+      {/* Thin-Book & Anomaly Quality Guard Strip (v1.6.0) */}
+      <div
+        id="quality-guard-strip"
+        className="bg-[#0e1522] border border-amber-500/30 rounded-lg px-3.5 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs scroll-mt-24"
+      >
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 font-semibold text-amber-300">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            Data-Quality Guard
+          </span>
+          <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/35">
+            Executable ≥{THIN_BOOK_LABEL}: {qualitySummary.executableCount}
+          </span>
+          <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/35">
+            THIN BOOK (&lt;{THIN_BOOK_LABEL}, cap ≤55): {qualitySummary.thinBookCount}
+          </span>
+          <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-rose-500/15 text-rose-300 border border-rose-500/35">
+            STALE SPOT (&gt;1500bps): {qualitySummary.staleSpotCount}
+          </span>
+          <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/35">
+            Spread/Basis Alerts: {qualitySummary.divergenceAlertCount}
+          </span>
+        </div>
+        <button
+          onClick={() => setFilter((f) => (f === 'QUALITY_ALERTS' ? 'ALL' : 'QUALITY_ALERTS'))}
+          className={`px-2.5 py-1 rounded text-[11px] font-medium border transition ${
+            filter === 'QUALITY_ALERTS'
+              ? 'bg-amber-500/25 border-amber-400 text-amber-200'
+              : 'bg-slate-900 border-slate-700 text-slate-300 hover:border-amber-500/50'
+          }`}
+        >
+          {filter === 'QUALITY_ALERTS' ? 'Showing Quality Alerts (Reset)' : 'Inspect Flagged Markets'}
+        </button>
+      </div>
+
       {/* Filters & Search */}
       <div className="flex flex-wrap items-center justify-between gap-2 bg-[#0e1522] border border-slate-800/90 rounded-lg p-2.5">
         <div className="flex flex-wrap gap-1.5">
@@ -167,6 +213,7 @@ export const ScannerTab: React.FC<Props> = ({
               ['EQUITY', 'Tokenized Equities'],
               ['COMMODITY', 'Commodities'],
               ['HIGH_CARRY', 'High Carry (≥15% APR)'],
+              ['QUALITY_ALERTS', `Quality Alerts (${qualitySummary.thinBookCount + qualitySummary.staleSpotCount})`],
             ] as [FilterKey, string][]
           ).map(([k, label]) => (
             <button
